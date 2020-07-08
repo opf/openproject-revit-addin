@@ -25,6 +25,12 @@ namespace OpenProject.WebViewIntegration
         }
       };
 
+      // This handles checking of valid urls, otherwise they're opened in
+      // the system browser
+      _webBrowser.RequestHandler = new OpenProjectBrowserRequestHandler();
+      // This one prevents popups or additional browser windows
+      _webBrowser.LifeSpanHandler = new OpenProjectBrowserLifeSpanHandler();
+
       if (ConfigurationHandler.ShouldEnableDevelopmentTools())
       {
         var devToolsEnabled = false;
