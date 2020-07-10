@@ -181,6 +181,11 @@ namespace OpenProject.Shared
             "**/*.xml",
             "**/*.XML")
           .ForEach(DeleteFile);
+
+        revitConfigurations.ForEach(revitConfig =>
+        {
+          CopyDirectoryRecursively(OutputDirectory / "OpenProject.Windows", OutputDirectory / "OpenProject.Revit" / revitConfig / "OpenProject.Windows");
+        });
       });
 
   Target CreateSetup => _ => _
