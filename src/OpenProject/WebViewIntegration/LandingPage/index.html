@@ -74,9 +74,8 @@
       }
       
       .main_container {
-        margin-top: 55px;
         margin-bottom: 55px;
-        padding: 50px 20px 20px 20px;
+        padding: 90px 20px 20px 20px;
         background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(244,244,244,1) 71%);
       }
 
@@ -308,6 +307,10 @@
 
       // Fill the main input and setup the instances list 
       function setUpInstanceInputAndList(allInstances) {
+        if (allInstances > 1) {
+          previousListTitle.style.display = 'flex';
+        }
+
         allInstances.forEach((instance, index) => {
           // Set the value of the editable/main input
           if (index === allInstances.length - 1) {
@@ -347,6 +350,7 @@
 
           window.RevitBridge.sendMessageToOpenProject = function (messageData) {
             const message = JSON.parse(messageData);
+
             if (message.messagePayload && message.messagePayload.length) {
               message.messagePayload = JSON.parse(message.messagePayload);
             }
@@ -355,10 +359,11 @@
               Array.isArray(message.messagePayload) &&
               message.messagePayload.length) {
               setUpInstanceInputAndList(message.messagePayload)
-              previousListTitle.style.display = 'flex';
             }
 
-            previousCallback(messageData);
+            if (previousCallback) {
+              previousCallback(messageData);
+            }
           };
 
           window.RevitBridge.sendMessageToRevit('RequestAllInstances', '0', '');
