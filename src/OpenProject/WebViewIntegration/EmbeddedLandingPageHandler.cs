@@ -4,8 +4,10 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Dangl;
 
 namespace OpenProject.WebViewIntegration
 {
@@ -18,6 +20,27 @@ namespace OpenProject.WebViewIntegration
       return $"file:///{indexFilePath}";
     }
 
+    private static string _landingPageZipHash;
+
+    private static string GetLandingPageZipHash()
+    {
+      if (!string.IsNullOrWhiteSpace(_landingPageZipHash))
+      {
+        return _landingPageZipHash;
+      }
+
+      using (var zipStream = GetEmbeddedResourceZipStream())
+      {
+        using (var md5 = MD5.Create())
+        {
+          _landingPageZipHash = md5.ComputeHash(zipStream)
+                    .Select(b => $"{b:x2}")
+                    .Aggregate((c, n) => c + n);
+          return _landingPageZipHash;
+        }
+      }
+    }
+
     private static string GetIndexFilePath()
     {
       // The unpacked Html should be adjacent to this Dll
@@ -28,7 +51,11 @@ namespace OpenProject.WebViewIntegration
       var currentFolder = Path.GetDirectoryName(currentAssemblyPath);
       // We're versioning the folder so as to not have to do a direct file comparison of the contents
       // in case an earlier version was aready present
-      var landingPageFolder = Path.Combine(currentFolder, "LandingPage", VersionsService.Version);
+
+      // The hash is used to ensure that when working locally in a debugging environment, any changes to
+      // the zip files content ensure that the current version of the landing page is extracted.
+      var landingPageZipHash = GetLandingPageZipHash();
+      var landingPageFolder = Path.Combine(currentFolder, "LandingPage", VersionsService.Version, landingPageZipHash);
       if (!Directory.Exists(landingPageFolder))
       {
         ExtractEmbeddedLandingPageToFolder(landingPageFolder);
