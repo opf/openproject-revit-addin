@@ -266,7 +266,7 @@ namespace OpenProject.Shared
         scriptDeclaration.Remove();
       }
 
-        var transformedHtml = htmlDoc.DocumentNode.OuterHtml;
+      var transformedHtml = htmlDoc.DocumentNode.OuterHtml;
       WriteAllText(landingPageFolder / "generated.html", transformedHtml);
     });
 }
