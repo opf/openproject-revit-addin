@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using OpenProject.Shared;
 using RestSharp;
 using DataFormat = RestSharp.DataFormat;
 
@@ -13,10 +12,6 @@ namespace OpenProject.Api
 {
   public static class GitHubRest
   {
-    // TODO
-    // This is used for auto update checks and is currently still pointing to the original repository,
-    // should be pointed towards the OPF repo
-
     internal static RestClient Client
     {
       get { return new RestClient(@"https://api.github.com/"); } 
@@ -25,10 +20,11 @@ namespace OpenProject.Api
     internal static async Task<List<GitHubRelease>> GetReleases(CancellationTokenSource cancel)
     {
       if (cancel.IsCancellationRequested)
+      {
         return null;
+      }
 
-
-      var request = new RestRequest("repos/opf/bcfier/releases", Method.GET);
+      var request = new RestRequest($"repos/{RepositoryInfo.GitHubOwner}/{RepositoryInfo.GitHubRepository}/releases", Method.GET);
       request.AddHeader("Content-Type", "application/json");
       request.RequestFormat = DataFormat.Json;
       request.OnBeforeDeserialization = resp => { resp.ContentType = "application/json"; };
@@ -41,12 +37,12 @@ namespace OpenProject.Api
     internal static GitHubRelease GetLatestRelease()
     {
 
-      var request = new RestRequest("repos/opf/bcfier/releases/latest", Method.GET);
+      var request = new RestRequest($"repos/{RepositoryInfo.GitHubOwner}/{RepositoryInfo.GitHubRepository}/releases/latest", Method.GET);
       request.AddHeader("Content-Type", "application/json");
       request.RequestFormat = DataFormat.Json;
 
       var response = Client.Execute<GitHubRelease> (request);
-      //if cancellation oending or invalid reponse return null, otherwise the data
+      //if cancellation pending or invalid reponse return null, otherwise the data
       return !CheckResponse(response, HttpStatusCode.OK) ? null : response.Data;
     }
 
@@ -79,7 +75,5 @@ namespace OpenProject.Api
       }
       return true;
     }
-
-  
   }
 }

@@ -47,12 +47,7 @@ Name: revit19; Description: Addin for Autodesk Revit 2019;  Types: full
 Name: revit20; Description: Addin for Autodesk Revit 2020;  Types: full
 Name: revit21; Description: Addin for Autodesk Revit 2021;  Types: full
 
-[Dirs]
-Name: "{app}"; Permissions: everyone-full 
-
 [Files]
-; Windows App
-Source: "{#Repository}\output\{#WinAppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs; Components: revit19 revit20 revit21
 
 ;REVIT 2019                                                                                                                                    
 Source: "{#Repository}\output\{#RevitAppName}\Release-2019\*"; DestDir: "{#RevitFolder19}"; Flags: ignoreversion recursesubdirs; Components: revit19 
