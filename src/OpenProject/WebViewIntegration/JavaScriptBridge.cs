@@ -73,6 +73,13 @@ namespace OpenProject.WebViewIntegration
       {
         RevitMainWindowHandler.SetFocusToRevit();
       }
+      else if (messageType == MessageTypes.GO_TO_SETTINGS)
+      {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+          _webBrowser.Address = LandingIndexPageUrl();
+        });
+      }
       else
       {
         var eventArgs = new WebUIMessageEventArgs(messageType, trackingId, messagePayload);
@@ -103,6 +110,12 @@ namespace OpenProject.WebViewIntegration
         _webBrowser?.GetMainFrame()
           .ExecuteJavaScriptAsync($"{REVIT_BRIDGE_JAVASCRIPT_NAME}.sendMessageToOpenProject({encodedMessage})");
       });
+    }
+
+    private string LandingIndexPageUrl()
+    {
+      string url = EmbeddedLandingPageHandler.GetEmbeddedLandingPageIndexUrl();
+      return url;
     }
 
     private void HandleInstanceNameReceived(string instanceName)

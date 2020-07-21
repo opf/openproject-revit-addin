@@ -1,4 +1,4 @@
-﻿namespace OpenProject.Shared
+namespace OpenProject.Shared
 {
   public static class MessageTypes
   {
@@ -26,6 +26,9 @@
 
     // This is the response for the LAST_INSTANCE_REQUESTED message
     public const string LAST_INSTANCE = "LastInstance";
+
+    // This event will navigate the browser to the landing/settings page
+    public const string GO_TO_SETTINGS = "GoToSettings";
 
     public const string VIEWPOINT_DATA = "ShowViewpoint";
     public const string VIEWPOINT_GENERATION_REQUESTED = "ViewpointGenerationRequest";
