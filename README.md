@@ -1,10 +1,12 @@
-# OpenProject Revit Addin
+# OpenProject Revit Add-In
 
 ## Intro
 
-The OpenProject Revit Addin extends Autodesk Revit with real time BCF management capabilities. It directly loads OpenProject into a window and let you create and inspect BCFs right in your Revit environment.
+**This Software is still in Alpha status and not yet officially released. Please use it at your own risk.**
 
-This program is open source and largely builds on [BCFier](https://github.com/teocomi/bcfier).
+The _OpenProject Revit Add-In_ allows you to use the open source project management software _OpenProject BIM_ directly within your Autodesk Revit environment. It lets you create, inspect and manage issues right in the moment when you can also solve them - when you have your Revit application fired up and the relevant BIM models open. Issues get stored as BCFs centrally and are available to every team member in real time - thanks to our browser based IFC viewer even to those team members without expensive Revit licenses. No BCF XML import/export is needed. However, you still can import and export BCF XML as you like and stay interoparable with any other BCF software.
+
+This program originally based on the excellent [BCFier](https://github.com/teocomi/bcfier) but then moved into a new direction.
 
 ### License
 GNU General Public License v3 Extended
