@@ -236,19 +236,19 @@
         width: 450px;
       }
 
-      .add_instance__button {
+      .add_instance__open, .add_instance__close {
         margin-top: 10px;
         margin-bottom: 10px;
-        color: var(--primary);
+        color: var(--primary) !important;
         cursor: pointer;
       }
 
-      .add_instance__button span {
+      .add_instance__open span, .add_instance__close span {
         font-size: 21px;
-        font-weight: bolder;        
+        font-weight: bolder;
       }
 
-      .add_instance__button {
+      .add_instance__open {
         width: 120px;        
       }
 
@@ -256,6 +256,10 @@
         opacity: 0;
         transition: all 0.3s;
         margin-bottom: 5px;
+      }
+
+      .add_instance__close {
+        opacity: 0;
       }
 
       .settings_container {
@@ -271,6 +275,12 @@
 
       .brand img {
         width: 210px;
+      }
+
+      .add_instance__wrapper {
+        display: flex;
+        place-content: center space-between;
+        height: 50px;
       }
     </style>
     
@@ -447,19 +457,24 @@
 
       // Setup the instances list 
       function setUpInstanceInputAndList() {
-        const addInstanceContainerButton = document.querySelector('.add_instance__button');
+        const addInstanceButtonContainer = document.querySelector('.add_instance__open');
         const addInstanceInput = document.querySelector('.add_instance__input');
         const addInstanceInputContainer = document.querySelector('.add_instance__input_container');
+        const closeAddInstanceButton = document.querySelector('.add_instance__close');
+
         addInstanceButton = addInstanceInputContainer.querySelector('.add-button');
         addInstanceButton.disabled = true;
 
         if (allInstances.length > 1) {
           previousListTitle.style.display = 'flex';
 
-          addInstanceContainerButton.addEventListener('click', event => {
+          addInstanceButtonContainer.addEventListener('click', event => {
             addInstanceInputContainer.style.opacity == false ?
               addInstanceInputContainer.style.opacity = '1' :
               addInstanceInputContainer.style.opacity = '0';
+
+            addInstanceButtonContainer.style.opacity = '0';
+            closeAddInstanceButton.style.opacity = '1';
           });
 
           addInstanceButton.addEventListener('click', event => {
@@ -469,8 +484,20 @@
             window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
             renderPreviousInstancesList(allInstances);
 
-            addInstanceInput.value = '';
             addInstanceInputContainer.style.opacity = '0';
+            closeAddInstanceButton.style.opacity = '0';
+            addInstanceButtonContainer.style.opacity = '1';
+            addInstanceInput.value = '';
+            addInstanceButton.disabled = true;
+          });
+
+          closeAddInstanceButton.addEventListener('click', event => {
+            addInstanceInputContainer.style.opacity = '0';
+            closeAddInstanceButton.style.opacity = '0';
+            addInstanceButtonContainer.style.opacity = '1';
+            addInstanceInput.value = '';
+            errorContainer.style.display = 'none';
+            addInstanceButton.disabled = true;
           });
         }
 
@@ -603,11 +630,17 @@
         <div class="previous_instances__list"></div>
 
         <div class="add_instance">
-          <p class="add_instance__button">
-            <span>+</span>
+          <div class="add_instance__wrapper">
+            <p class="add_instance__open">
+              <span>+</span>
 
-            Add URL
-          </p>
+              Add URL
+            </p>
+
+            <p class="add_instance__close">
+              <span>x</span>
+            </p>
+          </div>
 
           <div class="form__wrapper add_instance__input_container">
             <div class="input__wrapper">
