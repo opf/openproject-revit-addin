@@ -11,8 +11,13 @@ namespace OpenProject.Shared
     // This message may be sent by Revit to force the closing of the sesktop application
     public const string CLOSE_DESKTOP_APPLICATION = "CloseDesktopApplication";
 
-    // This is used from the landing page when the user selects an OpenProject instance
+    // This is used from the landing page when the user selects an OpenProject instance.
+    // It will add the instance to the white list unless it is already on the white list.
+    // Further, it will instruct the browser to visit that URL.
     public const string INSTANCE_SELECTED = "InstanceSelected";
+
+    // This is used from the landing page to add a URL to the white list. It will not 
+    public const string ADD_INSTANCE = "AddInstance";
 
     // This is called by the landing page to delete a saved instance
     public const string REMOVE_INSTANCE = "RemoveInstance";

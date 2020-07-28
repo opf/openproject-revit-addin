@@ -2,6 +2,7 @@
 using CefSharp.Wpf;
 using Newtonsoft.Json;
 using OpenProject.Shared;
+using System.Security.Policy;
 using System.Windows;
 
 namespace OpenProject.WebViewIntegration
@@ -60,6 +61,11 @@ namespace OpenProject.WebViewIntegration
         // should be accessed. We're not relaying this to Revit.
         HandleInstanceNameReceived(messagePayload);
       }
+      else if (messageType == MessageTypes.ADD_INSTANCE)
+      {
+        // Simply save the instance to the white list and do nothing else.
+        ConfigurationHandler.SaveSelectedInstance(messagePayload);
+      }
       else if (messageType == MessageTypes.REMOVE_INSTANCE)
       {
         ConfigurationHandler.RemoveSavedInstance(messagePayload);
@@ -75,10 +81,7 @@ namespace OpenProject.WebViewIntegration
       }
       else if (messageType == MessageTypes.GO_TO_SETTINGS)
       {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-          _webBrowser.Address = LandingIndexPageUrl();
-        });
+        VisitUrl(LandingIndexPageUrl());
       }
       else
       {
@@ -112,6 +115,14 @@ namespace OpenProject.WebViewIntegration
       });
     }
 
+    private void VisitUrl(string url)
+    {
+      Application.Current.Dispatcher.Invoke(() =>
+      {
+        _webBrowser.Address = url;
+      });
+    }
+
     private string LandingIndexPageUrl()
     {
       string url = EmbeddedLandingPageHandler.GetEmbeddedLandingPageIndexUrl();
@@ -120,24 +131,8 @@ namespace OpenProject.WebViewIntegration
 
     private void HandleInstanceNameReceived(string instanceName)
     {
-      var urlToOpen = string.Empty;
-      if (instanceName.Contains("."))
-      {
-        // It's likely an absolute url
-        urlToOpen = instanceName;
-      }
-      else
-      {
-        // It's an OpenProject team / organization
-        urlToOpen = $"https://{instanceName}.openproject.com";
-      }
-
-      ConfigurationHandler.SaveSelectedInstance(urlToOpen);
-
-      Application.Current.Dispatcher.Invoke(() =>
-      {
-        _webBrowser.Address = urlToOpen;
-      });
+      ConfigurationHandler.SaveSelectedInstance(instanceName);
+      VisitUrl(instanceName);
     }
   }
 }
