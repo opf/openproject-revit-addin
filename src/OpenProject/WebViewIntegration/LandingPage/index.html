@@ -559,24 +559,8 @@
         previousListTitle = document.querySelector('.previous_instances_title');
         landingPageContainer = document.querySelector('.landing_page_container');
         settingsContainer = document.querySelector('.settings_container');
-        
-        // TODO: Remove this
-        window.RevitBridge = {
-          sendMessageToOpenProject: (a, b, c) => console.log('sendMessageToOpenProject 0 ', a, b, c),
-          sendMessageToRevit: (a, b, c) => console.log('sendMessageToRevit 0 ', a, b, c),
-        };
 
         setupRevitCommunicationChannel();
-
-        // TODO: Remove this
-        const message = JSON.stringify({
-          messageType: 'AllInstances',
-          messagePayload: JSON.stringify(['https://project1.openproject.com', 'https://project2.openproject.com',
-          'https://project3.openproject.com'])
-        });
-
-        // TODO: Remove this
-        window.RevitBridge.sendMessageToOpenProject(message);
       });
     </script>
   </head>
