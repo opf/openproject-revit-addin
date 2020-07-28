@@ -308,14 +308,25 @@
         };
       };
 
+      function validateHttpUrl(string) {
+        let url;
+
+        try {
+          url = new URL(string);
+        } catch (_) {
+          return false;  
+        }
+
+        return url.protocol === "http:" || url.protocol === "https:";
+      }
+
       // Check if the url is valid (only if online)
       // and the URL belongs to a SAAS project
       function validateInstanceUrl() {
         const instanceUrl = instanceInput.value;
-        const protocols = ['http://', 'https://'];
         const domains = ['.openproject.com', '.openproject-edge.com', '.openproject-stage.com'];
         const isSAASDomain = domains.some(domain => instanceUrl.includes(domain));
-        const hasCorrectProtocol = protocols.some(protocol => instanceUrl.includes(protocol));
+        const isValidHttpUrl = validateHttpUrl(instanceUrl);
         const isAlreadyOnTheList = allInstances && allInstances.includes(instanceUrl);
 
         if (isAlreadyOnTheList) {
@@ -326,7 +337,7 @@
 
         // If the url belongs to an OP SAAS instance
         // test it against the SAAS API (/instance)
-        if (isSAASDomain && hasCorrectProtocol) {
+        if (isSAASDomain && isValidHttpUrl) {
           let regex = /(?:http[s]*\:\/\/)*(.*?)\.(?=[^\/]*\..{2,5})/i;
           const instanceName = instanceUrl.match(regex)[1];
           
@@ -357,8 +368,8 @@
             showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
             addInstanceButton.disabled = true;
           })        
-        } else if (!hasCorrectProtocol) {
-          showErrorMessage("<span>The URL must start with 'http://' or 'https://'</span>");
+        } else if (!isValidHttpUrl) {
+          showErrorMessage("<span>The URL is not valid</span>");
           addInstanceButton.disabled = true;
         } else {
           errorContainer.style.display = 'none';
