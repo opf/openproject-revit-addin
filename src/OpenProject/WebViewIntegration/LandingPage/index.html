@@ -409,31 +409,6 @@
         element.style.zIndex = 0;
       }
 
-      function setupPage(page) {
-        if (page === 'landing') {
-          showElement(landingPageContainer);
-          errorContainer = document.querySelector('.landing-error');
-          instanceInput = document.getElementById('instance_name_input');
-          addInstanceButton = document.getElementById('submit-button');
-          addInstanceButton.disabled = true;
-          addInstanceButton.addEventListener('click', handleSubmit);
-
-          if (navigator.onLine) {
-            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
-          }
-        } else {
-          showElement(settingsContainer);
-          errorContainer = document.querySelector('.settings-error');
-          instanceInput = document.querySelector('.add_instance__input');
-
-          setUpInstanceInputAndList();
-
-          if (navigator.onLine) {
-            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
-          }
-        }
-      }
-
       function renderPreviousInstancesList(allInstances) {
         // Empty list
         previousInstancesList.innerHTML = '';
@@ -513,6 +488,31 @@
         }
 
         renderPreviousInstancesList(allInstances);
+      }
+      
+      function setupPage(page) {
+        if (page === 'landing') {
+          showElement(landingPageContainer);
+          errorContainer = document.querySelector('.landing-error');
+          instanceInput = document.getElementById('instance_name_input');
+          addInstanceButton = document.getElementById('submit-button');
+          addInstanceButton.disabled = true;
+          addInstanceButton.addEventListener('click', handleSubmit);
+
+          if (navigator.onLine) {
+            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
+          }
+        } else {
+          showElement(settingsContainer);
+          errorContainer = document.querySelector('.settings-error');
+          instanceInput = document.querySelector('.add_instance__input');
+
+          setUpInstanceInputAndList();
+
+          if (navigator.onLine) {
+            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
+          }
+        }
       }
       
       // Setup the sendMessageToOpenProject function that will be
