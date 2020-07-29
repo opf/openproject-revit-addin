@@ -2,6 +2,7 @@
 using CefSharp.Wpf;
 using Newtonsoft.Json;
 using OpenProject.Shared;
+using System.Security.Policy;
 using System.Windows;
 
 namespace OpenProject.WebViewIntegration
@@ -60,6 +61,11 @@ namespace OpenProject.WebViewIntegration
         // should be accessed. We're not relaying this to Revit.
         HandleInstanceNameReceived(messagePayload);
       }
+      else if (messageType == MessageTypes.ADD_INSTANCE)
+      {
+        // Simply save the instance to the white list and do nothing else.
+        ConfigurationHandler.SaveSelectedInstance(messagePayload);
+      }
       else if (messageType == MessageTypes.REMOVE_INSTANCE)
       {
         ConfigurationHandler.RemoveSavedInstance(messagePayload);
@@ -72,6 +78,10 @@ namespace OpenProject.WebViewIntegration
       else if (messageType == MessageTypes.FOCUS_REVIT_APPLICATION)
       {
         RevitMainWindowHandler.SetFocusToRevit();
+      }
+      else if (messageType == MessageTypes.GO_TO_SETTINGS)
+      {
+        VisitUrl(LandingIndexPageUrl());
       }
       else
       {
@@ -105,26 +115,24 @@ namespace OpenProject.WebViewIntegration
       });
     }
 
-    private void HandleInstanceNameReceived(string instanceName)
+    private void VisitUrl(string url)
     {
-      var urlToOpen = string.Empty;
-      if (instanceName.Contains("."))
-      {
-        // It's likely an absolute url
-        urlToOpen = instanceName;
-      }
-      else
-      {
-        // It's an OpenProject team / organization
-        urlToOpen = $"https://{instanceName}.openproject.com";
-      }
-
-      ConfigurationHandler.SaveSelectedInstance(urlToOpen);
-
       Application.Current.Dispatcher.Invoke(() =>
       {
-        _webBrowser.Address = urlToOpen;
+        _webBrowser.Address = url;
       });
+    }
+
+    private string LandingIndexPageUrl()
+    {
+      string url = EmbeddedLandingPageHandler.GetEmbeddedLandingPageIndexUrl();
+      return url;
+    }
+
+    private void HandleInstanceNameReceived(string instanceName)
+    {
+      ConfigurationHandler.SaveSelectedInstance(instanceName);
+      VisitUrl(instanceName);
     }
   }
 }

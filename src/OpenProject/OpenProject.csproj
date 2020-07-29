@@ -34,6 +34,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Assets\BCFierIcon16x16.png" />
     <EmbeddedResource Include="Assets\BCFierIcon32x32.png" />
+	<EmbeddedResource Include="WebViewIntegration\LandingPage\index.html" />
 	<EmbeddedResource Include="WebViewIntegration\LandingPage\LandingPage.zip" />
 	<EmbeddedResource Include="OpenProject.Configuration.json" />
   </ItemGroup>

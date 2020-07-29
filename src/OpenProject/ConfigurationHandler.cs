@@ -8,6 +8,9 @@ namespace OpenProject
 {
   public static class ConfigurationHandler
   {
+    private static bool _shouldReloadInstances = true;
+    private static List<string> _lastLoadedAllowedInstances;
+
     public static bool ShouldEnableDevelopmentTools()
     {
       var configuration = ReadConfigurationFile();
@@ -32,21 +35,31 @@ namespace OpenProject
         {
           array.Remove(existing);
           SaveConfigurationFile(configuration);
+          _shouldReloadInstances = true;
         }
       }
     }
 
     public static List<string> LoadAllInstances()
     {
-      var configuration = ReadConfigurationFile();
-      var existingValues = configuration["OpenProjectInstances"];
-      if (existingValues != null
-          && existingValues is JArray array)
+      if (_shouldReloadInstances)
       {
-        return existingValues.Select(i => i.ToString()).ToList();
+        var configuration = ReadConfigurationFile();
+        var existingValues = configuration["OpenProjectInstances"];
+        if (existingValues != null
+            && existingValues is JArray array)
+        {
+          _lastLoadedAllowedInstances = existingValues.Select(i => i.ToString()).ToList();
+          _shouldReloadInstances = false;
+          return _lastLoadedAllowedInstances.ToList();
+        }
+
+        return new List<string>();
       }
 
-      return new List<string>();
+      // Calling ToList() here to ensure the caller doesn't get the
+      // locally cached list, thus preventing accidental modifications
+      return _lastLoadedAllowedInstances.ToList();
     }
 
     public static void SaveSelectedInstance(string instanceUrl)
@@ -70,6 +83,7 @@ namespace OpenProject
       }
 
       SaveConfigurationFile(configuration);
+      _shouldReloadInstances = true;
     }
 
     private static JObject ReadConfigurationFile()

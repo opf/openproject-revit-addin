@@ -18,6 +18,9 @@ namespace OpenProject.Tests.Api
     [InlineData("v1.0.0", "1.1.0", false)]
     [InlineData("v2.2.19", "2.2.2", true)]
     [InlineData("v.2.19", ".2.2", true)]
+    [InlineData("v1.2.3", "v1.2.3-beta0001", true)]
+    [InlineData("v1.2.3-beta0001", "v1.2.3", false)]
+    [InlineData("v1.2.3-beta0003", "v1.2.3-beta0001", true)]
     public void CompareVersions(string source, string dest, bool isHigher)
     {
       var sourceVersion = new OpenProject.Api.Version(source);

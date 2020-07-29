@@ -3,7 +3,7 @@ name: continuous
 on: [push]
 
 jobs:
-  ubuntu-latest:
+  windows-latest:
     name: windows-latest
     runs-on: windows-latest
     steps:
