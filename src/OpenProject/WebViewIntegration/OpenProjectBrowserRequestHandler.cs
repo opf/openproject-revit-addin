@@ -1,4 +1,4 @@
-﻿using CefSharp;
+using CefSharp;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -44,6 +44,7 @@ namespace OpenProject.WebViewIntegration
 
       if (isValidExternalUrl)
       {
+        ConfigurationHandler.SaveLastVisitedPage(url);
         return false;
       }
 

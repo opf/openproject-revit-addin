@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -61,6 +61,29 @@ namespace OpenProject
       // locally cached list, thus preventing accidental modifications
       return _lastLoadedAllowedInstances.ToList();
     }
+
+    public static void SaveLastVisitedPage(string url)
+    {
+      var configuration = ReadConfigurationFile();
+      
+      configuration["LastVisitedPage"] = url;
+      
+      SaveConfigurationFile(configuration);
+    }
+
+    public static string LastVisitedPage()
+    {
+      var configuration = ReadConfigurationFile();
+      var lastVisitedPage = configuration["LastVisitedPage"];
+      if (lastVisitedPage == null)
+      {
+        return String.Empty;
+      } else
+      {
+        return lastVisitedPage.ToObject<string>();
+      }
+    }
+
 
     public static void SaveSelectedInstance(string instanceUrl)
     {
