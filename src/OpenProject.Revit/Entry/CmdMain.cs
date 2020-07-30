@@ -63,6 +63,7 @@ namespace OpenProject.Revit.Entry
         // Form Running?
         if (_bcfierWinProcess != null && !_bcfierWinProcess.HasExited)
         {
+          CheckSettingsButtonClick();
           return Result.Succeeded;
         }
 
@@ -81,6 +82,9 @@ namespace OpenProject.Revit.Entry
         var bcfWinProcessArguments = $"ipc {bcfierWinServerPort} {revitServerPort}";
         _bcfierWinProcess = Process.Start(bcfierWinProcessPath, bcfWinProcessArguments);
         IpcHandler.StartLocalClient(bcfierWinServerPort);
+
+        CheckSettingsButtonClick();
+
         return Result.Succeeded;
       }
       catch (Exception e)
@@ -90,5 +94,21 @@ namespace OpenProject.Revit.Entry
       }
     }
 
+    private void CheckSettingsButtonClick()
+    {
+      if (GetType().Name == "CmdMainSettings")
+      {
+        IpcHandler.SendOpenSettingsRequestToDesktopApp();
+      }
+
+    }
   }
+  /// <summary>
+  /// Obfuscation Ignore for External Interface
+  /// </summary>
+  [Obfuscation(Exclude = true, ApplyToMembers = false)]
+  [Transaction(TransactionMode.Manual)]
+  [Regeneration(RegenerationOption.Manual)]
+  public class CmdMainSettings : CmdMain
+  { }
 }

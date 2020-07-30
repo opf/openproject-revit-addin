@@ -105,6 +105,12 @@ namespace OpenProject.WebViewIntegration
         System.Environment.Exit(0);
         return;
       }
+      else if (messageType == MessageTypes.GO_TO_SETTINGS)
+      {
+        VisitUrl(LandingIndexPageUrl());
+      }
+
+
 
       var messageData = JsonConvert.SerializeObject(new { messageType, trackingId, messagePayload });
       var encodedMessage = JsonConvert.ToString(messageData);

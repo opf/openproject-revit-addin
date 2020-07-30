@@ -28,19 +28,29 @@ namespace OpenProject.Revit.Entry
       try
       {
         // Tab
-        RibbonPanel panel = application.CreateRibbonPanel("OpenProject");
+        RibbonPanel panel = application.CreateRibbonPanel("OpenProject " + VersionsService.Version);
 
         // Button Data
-        PushButton pushButton = panel.AddItem(new PushButtonData("OpenProject",
-                                                                     "OpenProject " + VersionsService.Version,
+        PushButton browserButton = panel.AddItem(new PushButtonData("Browser",
+                                                                     "Browser",
                                                                      Path.Combine(_path, "OpenProject.Revit.dll"),
                                                                      "OpenProject.Revit.Entry.CmdMain")) as PushButton;
         // Images and Tooltip
-        if (pushButton != null)
+        if (browserButton != null)
         {
-          pushButton.Image = LoadPngImgSource("OpenProject.Revit.Assets.BCFierIcon16x16.png");
-          pushButton.LargeImage = LoadPngImgSource("OpenProject.Revit.Assets.BCFierIcon32x32.png");
-          pushButton.ToolTip = "OpenProject";
+          browserButton.Image = LoadPngImgSource("OpenProject.Revit.Assets.openproject-logo-16.png");
+          browserButton.LargeImage = LoadPngImgSource("OpenProject.Revit.Assets.openproject-logo-32.png");
+          browserButton.ToolTip = "OpenProject browser";
+        }
+
+        PushButton settingsButton = panel.AddItem(new PushButtonData("Settings",
+                                                                      "Settings",
+                                                                      Path.Combine(_path, "OpenProject.Revit.dll"),
+                                                                     "OpenProject.Revit.Entry.CmdMainSettings")) as PushButton;
+
+        if (settingsButton != null)
+        {
+          settingsButton.ToolTip = "OpenProject Revit Add-in settings";
         }
       }
       catch (Exception ex1)

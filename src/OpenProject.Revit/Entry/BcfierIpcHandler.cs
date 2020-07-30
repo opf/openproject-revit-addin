@@ -124,6 +124,13 @@ namespace OpenProject.Revit.Entry
       }
     }
 
+    public void SendOpenSettingsRequestToDesktopApp()
+    {
+      var eventArgs = new WebUIMessageEventArgs(MessageTypes.GO_TO_SETTINGS, "0", string.Empty);
+      var jsonEventArgs = JsonConvert.SerializeObject(eventArgs);
+      _sendData(jsonEventArgs);
+    }
+
     /// <summary>
     /// Same as in the windows app, but here we generate a VisInfo that is attached to the view
     /// </summary>
