@@ -234,7 +234,7 @@
       }
 
       .add_instance input {
-        width: 450px;
+        width: 400px;
       }
 
       .add_instance__open {
@@ -266,6 +266,7 @@
 
       .add_instance__close {
         opacity: 0;
+        margin-left: 15px;
       }
 
       .settings_container {
@@ -281,12 +282,6 @@
 
       .brand img {
         width: 210px;
-      }
-
-      .add_instance__wrapper {
-        display: flex;
-        place-content: center space-between;
-        height: 50px;
       }
     </style>
     
@@ -639,10 +634,6 @@
 
               Add URL
             </p>
-
-            <p class="add_instance__close">
-              <i class="fas fa-times"></i>
-            </p>
           </div>
 
           <div class="form__wrapper add_instance__input_container">
@@ -657,7 +648,12 @@
             <button class="add-button" type="button" name="submit" disabled="true">
               Add
             </button>
+
+            <div class="add_instance__close">
+              <i class="fas fa-times"></i>
+            </div>
           </div>
+
           <div class="alert alert-danger validation-error settings-error" id="instance-error-message" style="display:none;"
             role="alert">
           </div>
