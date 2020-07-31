@@ -339,6 +339,13 @@
         // If the url belongs to an OP SAAS instance
         // test it against the SAAS API (/instance)
         if (isSAASDomain && isValidHttpUrl) {
+          console.log('isSAASDomain', isSAASDomain)
+          if (!instanceUrl.includes('https')) {
+            showErrorMessage("<span>OpenProject URLs must start with 'https'</span>");
+            addInstanceButton.disabled = true;
+            return;
+          }
+
           let regex = /(?:http[s]*\:\/\/)*(.*?)\.(?=[^\/]*\..{2,5})/i;
           const instanceName = instanceUrl.match(regex)[1];
           
@@ -562,8 +569,24 @@
         previousListTitle = document.querySelector('.previous_instances_title');
         landingPageContainer = document.querySelector('.landing_page_container');
         settingsContainer = document.querySelector('.settings_container');
+        
+        // TODO: Remove this
+        window.RevitBridge = {
+          sendMessageToOpenProject: (a, b, c) => console.log('sendMessageToOpenProject 0 ', a, b, c),
+          sendMessageToRevit: (a, b, c) => console.log('sendMessageToRevit 0 ', a, b, c),
+        };
 
         setupRevitCommunicationChannel();
+
+        // TODO: Remove this
+        const message = JSON.stringify({
+          messageType: 'AllInstances',
+          messagePayload: JSON.stringify(['https://project1.openproject.com', 'https://project2.openproject.com',
+          'https://project3.openproject.com'])
+        });
+
+        // TODO: Remove this
+        window.RevitBridge.sendMessageToOpenProject(message);
       });
     </script>
   </head>
