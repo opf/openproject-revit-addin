@@ -7,7 +7,6 @@
     <title>OpenProject Revit Integration</title>
     <meta name="description" content="Revit pluging of OpenProject, Web-based open source project management software to support teams along the entire project management life-cycle: task management✓ Gantt charts✓ agile boards✓ team collaboration✓ bug tracking✓ roadmap✓ time and cost reporting✓ FREE trial!">
     <link rel="stylesheet" href="./assets/main.css">
-    <!-- <link rel="stylesheet" type="text/css" href="./assets/fontawesome.min.css" media="all"> -->
     <link href="./assets/font-awesome-css/all.css" rel="stylesheet">
     <script src="./assets/jquery-3.1.0.min.js.Download"></script>
     <style>
@@ -73,7 +72,7 @@
         width: 100%;
       }
       
-      .main_container {
+      .landing_page_container {
         margin-bottom: 75px;
         padding: 120px 20px 20px 20px;
         background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(244,244,244,1) 71%);
@@ -128,7 +127,37 @@
         border-radius: 2px 0 2px 0;
       }
 
-      #submit-button, .go-button {
+      .previous_instances__list_container {
+        max-width: 550px;
+        margin: 0 auto;
+      }
+
+      .list__block {
+        padding: 10px 0;
+        border-bottom: 1px solid #e7e7e7;
+      }
+
+      .list__block:nth-child(1) {
+        border-top: 1px solid #e7e7e7;
+      }
+
+      .list_item__wrapper {
+        display: flex;
+        place-content: center center;
+      }
+
+      .list_item__wrapper p {
+        width: 400px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .list_item__wrapper, .list_item__wrapper .go-button {
+        height: 35px;
+      }
+
+      #submit-button, .go-button, .add-button {
         margin: 0;
         line-height: inherit;
         overflow: visible;
@@ -163,7 +192,7 @@
         cursor:not-allowed;
       }
 
-      #submit-button:disabled {
+      #submit-button:disabled, .add-button:disabled {
         border: 1px solid lightgrey;
         background-color: lightgrey;
         cursor:not-allowed;
@@ -179,16 +208,79 @@
         display: none;
       }
 
-      .delete-button {
+      .delete-button, .list_item__wrapper .go-button {
         margin-left: 1rem;
-        background-color: var(--blue);
-        color: var(--white);
+        background: #f8f8f8;
+        border: 1px solid #dddddd;
         width: 45px;
+        color: var(--black);
         transition: background-color .5s;
+        border-radius: 2px;
       }
 
-      .delete-button:hover {
-        background-color: #1a67a3;
+      .delete-button:hover, .list_item__wrapper .go-button:hover {
+        background-color: #e2e2e2;
+      }
+
+      .signup {
+        width: 450px;
+      }
+
+      .signup p {
+        font-size: 16px;
+        margin-bottom: 5px;
+        line-height: 20px;
+      }
+
+      .add_instance input {
+        width: 450px;
+      }
+
+      .add_instance__open, .add_instance__close {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        color: var(--primary) !important;
+        cursor: pointer;
+      }
+
+      .add_instance__open span, .add_instance__close span {
+        font-size: 21px;
+        font-weight: bolder;
+      }
+
+      .add_instance__open {
+        width: 120px;        
+      }
+
+      .add_instance__input_container {
+        opacity: 0;
+        transition: all 0.3s;
+        margin-bottom: 5px;
+      }
+
+      .add_instance__close {
+        opacity: 0;
+      }
+
+      .settings_container {
+        margin-top: 150px;
+      }
+
+      .landing_page_container, .settings_container {
+        position: absolute;
+        z-index: -99;
+        opacity: 0;
+        transition: all 0.3s;
+      }
+
+      .brand img {
+        width: 210px;
+      }
+
+      .add_instance__wrapper {
+        display: flex;
+        place-content: center space-between;
+        height: 50px;
       }
     </style>
     
@@ -196,8 +288,11 @@
       let instanceInput;
       let errorContainer;
       let previousInstancesList;
-      let submitButton;
+      let addInstanceButton;
       let previousListTitle;
+      let landingPageContainer;
+      let settingsContainer;
+      let allInstances;
 
       function debounce(func, wait) {
         let timeout;
@@ -213,16 +308,36 @@
         };
       };
 
+      function validateHttpUrl(string) {
+        let url;
+
+        try {
+          url = new URL(string);
+        } catch (_) {
+          return false;  
+        }
+
+        return url.protocol === "http:" || url.protocol === "https:";
+      }
+
       // Check if the url is valid (only if online)
       // and the URL belongs to a SAAS project
       function validateInstanceUrl() {
         const instanceUrl = instanceInput.value;
         const domains = ['.openproject.com', '.openproject-edge.com', '.openproject-stage.com'];
         const isSAASDomain = domains.some(domain => instanceUrl.includes(domain));
+        const isValidHttpUrl = validateHttpUrl(instanceUrl);
+        const isAlreadyOnTheList = allInstances && allInstances.includes(instanceUrl);
+
+        if (isAlreadyOnTheList) {
+          showErrorMessage("<span>The URL is already included on this list</span>");
+          addInstanceButton.disabled = true;
+          return;
+        }
 
         // If the url belongs to an OP SAAS instance
         // test it against the SAAS API (/instance)
-        if (isSAASDomain) {
+        if (isSAASDomain && isValidHttpUrl) {
           let regex = /(?:http[s]*\:\/\/)*(.*?)\.(?=[^\/]*\..{2,5})/i;
           const instanceName = instanceUrl.match(regex)[1];
           
@@ -243,16 +358,22 @@
           .then(response => {
             if (response.ok) {
               showErrorMessage("<span>This URL doesn't belongs to an OpenProject instance</span>");
-              submitButton.disabled = true;
+              addInstanceButton.disabled = true;
             } else {
               errorContainer.style.display = 'none';
-              submitButton.disabled = false;              
+              addInstanceButton.disabled = false;              
             }
           })
           .catch(error => {
             showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
-            submitButton.disabled = true;
+            addInstanceButton.disabled = true;
           })        
+        } else if (!isValidHttpUrl) {
+          showErrorMessage("<span>The URL is not valid</span>");
+          addInstanceButton.disabled = true;
+        } else {
+          errorContainer.style.display = 'none';
+          addInstanceButton.disabled = false;
         }
       }
 
@@ -270,7 +391,6 @@
         }
       }
 
-      // Show error message
       function showErrorMessage(message) {
         errorContainer.innerHTML = message;
         errorContainer.style.display = 'block';
@@ -278,43 +398,121 @@
 
       function removeInstance(instanceUrl) {
         window.RevitBridge.sendMessageToRevit('RemoveInstance', '0', instanceUrl);
+        allInstances = allInstances.filter(instance => instance !== instanceUrl);
+        renderPreviousInstancesList(allInstances);
       }
 
-      // Fill the main input and setup the instances list 
-      function setUpInstanceInputAndList(allInstances) {
-        if (allInstances.length > 1) {
-          previousListTitle.style.display = 'flex';
-        }
+      function showElement(element) {
+        element.style.display = 'block';
+        element.style.position = 'relative';
+        element.style.opacity = '1';
+        element.style.zIndex = 0;
+      }
+
+      function renderPreviousInstancesList(allInstances) {
+        // Empty list
+        previousInstancesList.innerHTML = '';
 
         allInstances.forEach((instance, index) => {
-          // Set the value of the editable/main input
-          if (index === 0) {
-            instanceInput.value = instance;
-            submitButton.disabled = false;
-          } else {
-            // Create the list of the last used instance urls
-            const templateClone = document.querySelector('#inputTemplate').content.cloneNode(true);
-            const input = templateClone.querySelector('.instance_name_input_list');
-            const goButton = templateClone.querySelector('.go-button');
-            const deleteButton = templateClone.querySelector('.delete-button');
-            goButton.dataset.instance = instance;
-            deleteButton.dataset.instance = instance;
+          // Create the list of the last used instance urls
+          const templateClone = document.querySelector('#listItemTemplate').content.cloneNode(true);
+          const listItem = templateClone.querySelector('.list_item__wrapper');
+          const url = document.createElement('div');
+          const goButton = templateClone.querySelector('.go-button');
+          const deleteButton = templateClone.querySelector('.delete-button');
 
-            goButton.addEventListener('click', event => {
-              window.RevitBridge.sendMessageToRevit('InstanceSelected', '0', event.target.dataset.instance);
-            });
+          goButton.dataset.instance = instance;
+          deleteButton.dataset.instance = instance;
 
-            deleteButton.addEventListener('click', event => {
-              const instanceToRemove = event.target.dataset.instance || event.target.parentElement.dataset.instance;
-              
-              removeInstance(instanceToRemove);
-            });
+          goButton.addEventListener('click', event => {
+            window.RevitBridge.sendMessageToRevit('InstanceSelected', '0', event.target.dataset.instance);
+          });
 
-            input.value = instance;
+          deleteButton.addEventListener('click', event => {
+            const instanceToRemove = event.target.dataset.instance || event.target.parentElement.dataset.instance;
 
-            previousInstancesList.appendChild(templateClone);
-          }
+            removeInstance(instanceToRemove);
+          });
+
+          url.innerHTML = `<p>${instance}</p>`;
+          listItem.insertBefore(url, goButton);
+
+          previousInstancesList.appendChild(templateClone);
         });
+      }
+
+      // Setup the instances list 
+      function setUpInstanceInputAndList() {
+        const addInstanceButtonContainer = document.querySelector('.add_instance__open');
+        const addInstanceInput = document.querySelector('.add_instance__input');
+        const addInstanceInputContainer = document.querySelector('.add_instance__input_container');
+        const closeAddInstanceButton = document.querySelector('.add_instance__close');
+
+        addInstanceButton = addInstanceInputContainer.querySelector('.add-button');
+        addInstanceButton.disabled = true;
+
+        if (allInstances.length > 1) {
+          previousListTitle.style.display = 'flex';
+
+          addInstanceButtonContainer.addEventListener('click', event => {
+            addInstanceInputContainer.style.opacity == false ?
+              addInstanceInputContainer.style.opacity = '1' :
+              addInstanceInputContainer.style.opacity = '0';
+
+            addInstanceButtonContainer.style.opacity = '0';
+            closeAddInstanceButton.style.opacity = '1';
+          });
+
+          addInstanceButton.addEventListener('click', event => {
+            const selectedInstance = addInstanceInput.value;
+            allInstances = [...allInstances, selectedInstance];
+
+            window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
+            renderPreviousInstancesList(allInstances);
+
+            addInstanceInputContainer.style.opacity = '0';
+            closeAddInstanceButton.style.opacity = '0';
+            addInstanceButtonContainer.style.opacity = '1';
+            addInstanceInput.value = '';
+            addInstanceButton.disabled = true;
+          });
+
+          closeAddInstanceButton.addEventListener('click', event => {
+            addInstanceInputContainer.style.opacity = '0';
+            closeAddInstanceButton.style.opacity = '0';
+            addInstanceButtonContainer.style.opacity = '1';
+            addInstanceInput.value = '';
+            errorContainer.style.display = 'none';
+            addInstanceButton.disabled = true;
+          });
+        }
+
+        renderPreviousInstancesList(allInstances);
+      }
+      
+      function setupPage(page) {
+        if (page === 'landing') {
+          showElement(landingPageContainer);
+          errorContainer = document.querySelector('.landing-error');
+          instanceInput = document.getElementById('instance_name_input');
+          addInstanceButton = document.getElementById('submit-button');
+          addInstanceButton.disabled = true;
+          addInstanceButton.addEventListener('click', handleSubmit);
+
+          if (navigator.onLine) {
+            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
+          }
+        } else {
+          showElement(settingsContainer);
+          errorContainer = document.querySelector('.settings-error');
+          instanceInput = document.querySelector('.add_instance__input');
+
+          setUpInstanceInputAndList();
+
+          if (navigator.onLine) {
+            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
+          }
+        }
       }
       
       // Setup the sendMessageToOpenProject function that will be
@@ -330,10 +528,16 @@
               message.messagePayload = JSON.parse(message.messagePayload);
             }
 
-            if (message.messageType === 'AllInstances' &&
-              Array.isArray(message.messagePayload) &&
-              message.messagePayload.length) {
-              setUpInstanceInputAndList(message.messagePayload)
+            if (message.messageType === 'AllInstances') {
+              // Show settings if there are previous instances
+              if (Array.isArray(message.messagePayload) &&
+                  message.messagePayload.length) {
+                allInstances = message.messagePayload;
+                setupPage('settings');
+              // Show landing page if there are no previous instances                
+              } else {
+                setupPage('landing');
+              }
             }
 
             if (previousCallback) {
@@ -350,19 +554,11 @@
       
       // Setup when the DOM is ready
       document.addEventListener("DOMContentLoaded", function () {
-        instanceInput = document.getElementById('instance_name_input');
         errorContainer = document.getElementById('instance-error-message');
-        previousInstancesList = document.querySelector('.previous_instances_list');
-        submitButton = document.getElementById('submit-button');
+        previousInstancesList = document.querySelector('.previous_instances__list');
         previousListTitle = document.querySelector('.previous_instances_title');
-
-        submitButton.disabled = true;
-        submitButton.addEventListener('click', handleSubmit);
-
-        // Validate input changes if 
-        if (navigator.onLine) {
-          instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
-        }
+        landingPageContainer = document.querySelector('.landing_page_container');
+        settingsContainer = document.querySelector('.settings_container');
 
         setupRevitCommunicationChannel();
       });
@@ -373,14 +569,14 @@
     <header class="header">
       <div class="logo__container">
         <a class="brand" href="https://www.openproject.org/">
-          <img src="./assets/openproject-logo-white.svg" title="OpenProject.org">
+          <img src="./assets/logo_openproject_bim_big.png" title="OpenProject.org">
         </a>
       </div>
     </header>
 
-    <div class="main_container" role="document">
+    <div class="landing_page_container" role="document">
       <div class="claim__container">
-        <h1>Introduce the web address of your OpenProject environment</h1>        
+        <h1>Enter the web address of your OpenProject</h1>        
       </div>
 
       <div class="form__container">
@@ -393,49 +589,86 @@
                      placeholder="https://example.openproject.com">
             </div>
 
-            <button id="submit-button" type="button" name="submit">
-              GO
+            <button id="submit-button" type="button" name="submit" disabled="true">
+              Go
             </button>
           </div>
           
-          <div class="alert alert-danger validation-error" id="instance-error-message" style="display:none;" role="alert">
+          <div class="alert alert-danger validation-error landing-error" id="instance-error-message" style="display:none;" role="alert">
           </div>
 
           <div class="signup">
-            <a href="https://start.openproject.com/go/bim" target="_blank">
-              Don’t you have an account yet? Get one here
-            </a>
+            <p>
+              Don’t you have an account yet? Get one
+              <a href="https://start.openproject.com/go/bim" target="_blank">
+                here
+              </a>
+            </p>
+
+            <p>
+              Don’t you remember your organization's name on OpenProject? Find it 
+              <a href="https://www.openproject.org/request-organization" target="_blank">
+                here
+              </a>
+            </p>
           </div>
         </form>
       </div>
     </div>
 
-    <div class="previous_instances_title">
-      <p><strong>Other OpenProject environments used lately</strong></p>
-    </div>
-    
-    <div class="previous_instances_list">
-    </div>
-    
-    <template id="inputTemplate">
-      <div class="form__wrapper">
-        <div class="input__wrapper">
-          <input type="text"
-                  name="company"
-                  class="instance_name_input_list"
-                  placeholder="https://example.openproject.com"
-                  disabled>
-
-        </div>
-        
-        <button class="go-button" type="button" name="submit">
-          GO
-        </button>
-
-        <button class="delete-button" type="button" name="submit">
-          <i class="far fa-trash-alt"></i>
-        </button>
+    <div class="settings_container">
+      <div class="previous_instances_title">
+        <p><strong>Your OpenProject instances</strong></p>
       </div>
+
+      <div class="previous_instances__list_container">
+        <div class="previous_instances__list"></div>
+
+        <div class="add_instance">
+          <div class="add_instance__wrapper">
+            <p class="add_instance__open">
+              <span>+</span>
+
+              Add URL
+            </p>
+
+            <p class="add_instance__close">
+              <span>x</span>
+            </p>
+          </div>
+
+          <div class="form__wrapper add_instance__input_container">
+            <div class="input__wrapper">
+              <input type="text"
+                    name="company"
+                    class="add_instance__input"
+                    placeholder="https://example.openproject.com"
+                    autocomplete="off">
+            </div>
+
+            <button class="add-button" type="button" name="submit" disabled="true">
+              Add
+            </button>
+          </div>
+          <div class="alert alert-danger validation-error settings-error" id="instance-error-message" style="display:none;"
+            role="alert">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template id="listItemTemplate">
+      <div class="list__block">
+        <div class="list_item__wrapper">        
+          <button class="go-button" type="button" name="submit">
+            Go
+          </button>
+        
+          <button class="delete-button" type="button" name="submit">
+            <i class="far fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>        
     </template>
   </body>
 </html>
