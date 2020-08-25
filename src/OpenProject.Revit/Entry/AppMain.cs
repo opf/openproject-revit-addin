@@ -50,6 +50,8 @@ namespace OpenProject.Revit.Entry
 
         if (settingsButton != null)
         {
+          browserButton.Image = LoadPngImgSource("OpenProject.Revit.Assets.settings-32.png");
+          browserButton.LargeImage = LoadPngImgSource("OpenProject.Revit.Assets.settings-32.png");
           settingsButton.ToolTip = "OpenProject Revit Add-in settings";
         }
       }
