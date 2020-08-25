@@ -32,6 +32,7 @@
         --danger: #dc3545;
         --light: #f8f9fa;
         --dark: #343a40;
+        --header-bg-color: #05002C;
         --breakpoint-xs: 0;
         --breakpoint-sm: 576px;
         --breakpoint-md: 768px;
@@ -62,7 +63,7 @@
         z-index: 1030;
         padding: 0;
         height: 55px;
-        background-color: #1a67a3;
+        background-color: var(--header-bg-color);
         transition: background-color .3s;
       }
 
@@ -233,7 +234,16 @@
       }
 
       .add_instance input {
-        width: 450px;
+        width: 400px;
+      }
+
+      .add_instance__open {
+        width: 120px;
+        overflow: hidden;        
+      }
+
+      .add_instance__open i {
+        margin-right: 7px;
       }
 
       .add_instance__open, .add_instance__close {
@@ -248,10 +258,6 @@
         font-weight: bolder;
       }
 
-      .add_instance__open {
-        width: 120px;        
-      }
-
       .add_instance__input_container {
         opacity: 0;
         transition: all 0.3s;
@@ -260,6 +266,12 @@
 
       .add_instance__close {
         opacity: 0;
+        margin-left: 15px;
+        margin-top: 12px;
+      }
+
+      .add_instance__close i:before {
+        color: lightgrey;
       }
 
       .settings_container {
@@ -275,12 +287,6 @@
 
       .brand img {
         width: 210px;
-      }
-
-      .add_instance__wrapper {
-        display: flex;
-        place-content: center space-between;
-        height: 50px;
       }
     </style>
     
@@ -338,6 +344,12 @@
         // If the url belongs to an OP SAAS instance
         // test it against the SAAS API (/instance)
         if (isSAASDomain && isValidHttpUrl) {
+          if (!instanceUrl.includes('https')) {
+            showErrorMessage("<span>OpenProject URLs must start with 'https'</span>");
+            addInstanceButton.disabled = true;
+            return;
+          }
+
           let regex = /(?:http[s]*\:\/\/)*(.*?)\.(?=[^\/]*\..{2,5})/i;
           const instanceName = instanceUrl.match(regex)[1];
           
@@ -459,7 +471,9 @@
               addInstanceInputContainer.style.opacity = '1' :
               addInstanceInputContainer.style.opacity = '0';
 
-            addInstanceButtonContainer.style.opacity = '0';
+            addInstanceInput.focus();
+
+            addInstanceButtonContainer.style.height = '0';
             closeAddInstanceButton.style.opacity = '1';
           });
 
@@ -472,7 +486,7 @@
 
             addInstanceInputContainer.style.opacity = '0';
             closeAddInstanceButton.style.opacity = '0';
-            addInstanceButtonContainer.style.opacity = '1';
+            addInstanceButtonContainer.style.height = 'auto';
             addInstanceInput.value = '';
             addInstanceButton.disabled = true;
           });
@@ -480,7 +494,7 @@
           closeAddInstanceButton.addEventListener('click', event => {
             addInstanceInputContainer.style.opacity = '0';
             closeAddInstanceButton.style.opacity = '0';
-            addInstanceButtonContainer.style.opacity = '1';
+            addInstanceButtonContainer.style.height = 'auto';
             addInstanceInput.value = '';
             errorContainer.style.display = 'none';
             addInstanceButton.disabled = true;
@@ -627,13 +641,9 @@
         <div class="add_instance">
           <div class="add_instance__wrapper">
             <p class="add_instance__open">
-              <span>+</span>
+              <i class="fas fa-plus"></i>
 
               Add URL
-            </p>
-
-            <p class="add_instance__close">
-              <span>x</span>
             </p>
           </div>
 
@@ -649,7 +659,12 @@
             <button class="add-button" type="button" name="submit" disabled="true">
               Add
             </button>
+
+            <div class="add_instance__close">
+              <i class="fas fa-times"></i>
+            </div>
           </div>
+
           <div class="alert alert-danger validation-error settings-error" id="instance-error-message" style="display:none;"
             role="alert">
           </div>
