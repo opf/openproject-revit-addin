@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using OpenProject.WebViewIntegration;
+using System.ComponentModel;
 using System.Windows;
 
 namespace OpenProject.Windows
@@ -11,6 +12,10 @@ namespace OpenProject.Windows
     public MainWindow()
     {
       InitializeComponent();
+      JavaScriptBridge.Instance
+        .OnAppForegroundRequestReceived += (s) => {
+          Application.Current.Dispatcher.Invoke(() => Activate());
+        };
     }
 
     /// <summary>

@@ -131,6 +131,13 @@ namespace OpenProject.Revit.Entry
       _sendData(jsonEventArgs);
     }
 
+    public void SendBringBrowserToForegroundRequestToDesktopApp()
+    {
+      var eventArgs = new WebUIMessageEventArgs(MessageTypes.SET_BROWSER_TO_FOREGROUND, "0", string.Empty);
+      var jsonEventArgs = JsonConvert.SerializeObject(eventArgs);
+      _sendData(jsonEventArgs);
+    }
+
     /// <summary>
     /// Same as in the windows app, but here we generate a VisInfo that is attached to the view
     /// </summary>

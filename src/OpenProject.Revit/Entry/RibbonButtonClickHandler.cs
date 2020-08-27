@@ -31,6 +31,7 @@ namespace OpenProject.Revit.Entry
       try
       {
         EnsureExternalOpenProjectAppIsRunning(commandData);
+        IpcHandler.SendBringBrowserToForegroundRequestToDesktopApp();
 
         return Result.Succeeded;
       }
@@ -47,6 +48,7 @@ namespace OpenProject.Revit.Entry
       {
         EnsureExternalOpenProjectAppIsRunning(commandData);
         IpcHandler.SendOpenSettingsRequestToDesktopApp();
+        IpcHandler.SendBringBrowserToForegroundRequestToDesktopApp();
         return Result.Succeeded;
       }
       catch (Exception e)

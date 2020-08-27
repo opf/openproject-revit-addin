@@ -30,6 +30,10 @@ namespace OpenProject.WebViewIntegration
 
     public delegate void WebUIMessageReceivedEventHandler(object sender, WebUIMessageEventArgs e);
 
+    public event AppForegroundRequestReceivedEventHandler OnAppForegroundRequestReceived;
+
+    public delegate void AppForegroundRequestReceivedEventHandler(object sender);
+
     private void ChangeLoadingState(object sender, object eventArgs)
     {
       isLoaded = true;
@@ -83,6 +87,10 @@ namespace OpenProject.WebViewIntegration
       {
         VisitUrl(LandingIndexPageUrl());
       }
+      else if (messageType == MessageTypes.SET_BROWSER_TO_FOREGROUND)
+      {
+        OnAppForegroundRequestReceived?.Invoke(this);
+      }
       else
       {
         var eventArgs = new WebUIMessageEventArgs(messageType, trackingId, messagePayload);
@@ -109,8 +117,10 @@ namespace OpenProject.WebViewIntegration
       {
         VisitUrl(LandingIndexPageUrl());
       }
-
-
+      else if (messageType == MessageTypes.SET_BROWSER_TO_FOREGROUND)
+      {
+        OnAppForegroundRequestReceived?.Invoke(this);
+      }
 
       var messageData = JsonConvert.SerializeObject(new { messageType, trackingId, messagePayload });
       var encodedMessage = JsonConvert.ToString(messageData);
