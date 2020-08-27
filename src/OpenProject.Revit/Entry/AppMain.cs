@@ -73,7 +73,7 @@ namespace OpenProject.Revit.Entry
     {
       try
       {
-        CmdMain.IpcHandler?.SendShutdownRequestToDesktopApp();
+        RibbonButtonClickHandler.IpcHandler?.SendShutdownRequestToDesktopApp();
       }
       catch
       {
