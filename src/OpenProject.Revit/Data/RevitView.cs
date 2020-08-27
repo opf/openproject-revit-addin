@@ -50,7 +50,7 @@ namespace OpenProject.Revit.Data
             double dist = topLeft.DistanceTo(bottomRight) / 2;
 
             //ViewToWorldScale value
-            zoomValue = dist * Math.Sin(diagVector.AngleTo(view3D.RightDirection)).ToMeters();
+            zoomValue = (dist * Math.Sin(diagVector.AngleTo(view3D.RightDirection))).ToMeters();
 
             // **** CUSTOM VALUE FOR TEKLA **** //
             // calculated experimentally, not sure why but it works
