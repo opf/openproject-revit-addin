@@ -28,7 +28,7 @@ namespace OpenProject.Revit.Entry
       try
       {
         // Tab
-        RibbonPanel panel = application.CreateRibbonPanel("OpenProject " + VersionsService.Version);
+        RibbonPanel panel = application.CreateRibbonPanel("OpenProject");
 
         // Button Data
         PushButton browserButton = panel.AddItem(new PushButtonData("Browser",

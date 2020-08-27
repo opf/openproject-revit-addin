@@ -78,15 +78,25 @@ class Build : NukeBuild
     .Executes(() =>
     {
       var landingPageFolder = RootDirectory / "src" / "OpenProject" / "WebViewIntegration" / "LandingPage";
-      var zipOutputPath = landingPageFolder / "LandingPage.zip";
-      if (File.Exists(zipOutputPath))
+      var landingPageIndexPath = landingPageFolder / "index.html";
+      var originalLandingPageIndexContent = ReadAllText(landingPageIndexPath);
+      try
       {
-        DeleteFile(zipOutputPath);
-      }
+        WriteAllText(landingPageIndexPath, originalLandingPageIndexContent.Replace("@@PLUGIN_VERSION@@", GitVersion.NuGetVersion));
+        var zipOutputPath = landingPageFolder / "LandingPage.zip";
+        if (File.Exists(zipOutputPath))
+        {
+          DeleteFile(zipOutputPath);
+        }
 
-      var tempZipPath = OutputDirectory / $"{Guid.NewGuid()}.zip";
-      ZipFile.CreateFromDirectory(landingPageFolder, tempZipPath);
-      MoveFile(tempZipPath, zipOutputPath);
+        var tempZipPath = OutputDirectory / $"{Guid.NewGuid()}.zip";
+        ZipFile.CreateFromDirectory(landingPageFolder, tempZipPath);
+        MoveFile(tempZipPath, zipOutputPath);
+      }
+      finally
+      {
+        WriteAllText(landingPageIndexPath, originalLandingPageIndexContent);
+      }
     });
 
   Target WriteVersionAndRepoInfo => _ => _

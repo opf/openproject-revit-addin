@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-US" dir="ltr" class="wf-lato-n3-active wf-lato-n4-active wf-active">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -200,6 +200,12 @@
       }
 
       .claim__container, .previous_instances_title {
+        display: flex;
+        place-content: center center;
+        text-align: center;
+      }
+
+      .plugin_version {
         display: flex;
         place-content: center center;
         text-align: center;
@@ -670,6 +676,11 @@
           </div>
         </div>
       </div>
+        <div class="plugin_version">
+            <p>
+                Plugin Version: @@PLUGIN_VERSION@@
+            </p>
+        </div>
     </div>
 
     <template id="listItemTemplate">
