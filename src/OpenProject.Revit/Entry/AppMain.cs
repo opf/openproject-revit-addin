@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -38,8 +38,8 @@ namespace OpenProject.Revit.Entry
         // Images and Tooltip
         if (browserButton != null)
         {
-          browserButton.Image = LoadPngImgSource("OpenProject.Revit.Assets.openproject-logo-16.png");
-          browserButton.LargeImage = LoadPngImgSource("OpenProject.Revit.Assets.openproject-logo-32.png");
+          browserButton.Image = LoadPngImgSource("OpenProject.Revit.Assets.OpenProjectLogo16.png");
+          browserButton.LargeImage = LoadPngImgSource("OpenProject.Revit.Assets.OpenProjectLogo32.png");
           browserButton.ToolTip = "OpenProject browser";
         }
 
@@ -50,8 +50,8 @@ namespace OpenProject.Revit.Entry
 
         if (settingsButton != null)
         {
-          browserButton.Image = LoadPngImgSource("OpenProject.Revit.Assets.settings-32.png");
-          browserButton.LargeImage = LoadPngImgSource("OpenProject.Revit.Assets.settings-32.png");
+          settingsButton.Image = LoadPngImgSource("OpenProject.Revit.Assets.Settings32.png");
+          settingsButton.LargeImage = LoadPngImgSource("OpenProject.Revit.Assets.Settings32.png");
           settingsButton.ToolTip = "OpenProject Revit Add-in settings";
         }
       }

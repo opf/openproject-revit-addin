@@ -24,9 +24,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="Assets\BCFierIcon16x16.png" />
-		<EmbeddedResource Include="Assets\BCFierIcon32x32.png" />
-		<EmbeddedResource Include="Assets\icon.ico" />
+		<EmbeddedResource Include="Assets\**\*" />
 		<EmbeddedResource Include="OpenProject.Revit.Configuration.json" />
 	</ItemGroup>
 
