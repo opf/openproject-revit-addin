@@ -69,9 +69,9 @@ namespace OpenProject.Revit.Entry
       var cameraUpVector = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.UpX,
         v.OrthogonalCamera.UpY,
         v.OrthogonalCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.ViewPointX,
-        v.OrthogonalCamera.ViewPointY,
-        v.OrthogonalCamera.ViewPointZ);
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.ViewPointX.ToFeet(),
+        v.OrthogonalCamera.ViewPointY.ToFeet(),
+        v.OrthogonalCamera.ViewPointZ.ToFeet());
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, true);
 
       View3D orthoView = null;

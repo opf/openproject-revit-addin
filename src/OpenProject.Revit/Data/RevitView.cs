@@ -66,17 +66,18 @@ namespace OpenProject.Revit.Data
             XYZ up = t.UpDirection;
 
 
+
             v.OrthogonalCamera = new BcfViewpointOrthogonalCameraViewModel
             {
               ViewPointX = c.X.ToMeters(),
               ViewPointY = c.Y.ToMeters(),
               ViewPointZ = c.Z.ToMeters(),
-              UpX = up.X.ToMeters(),
-              UpY = up.Y.ToMeters(),
-              UpZ = up.Z.ToMeters(),
-              DirectionX = vi.X.ToMeters() * -1,
-              DirectionY = vi.Y.ToMeters() * -1,
-              DirectionZ = vi.Z.ToMeters() * -1,
+              UpX = up.X,
+              UpY = up.Y,
+              UpZ = up.Z,
+              DirectionX = vi.X * -1,
+              DirectionY = vi.Y * -1,
+              DirectionZ = vi.Z * -1,
               ViewToWorldScale = zoomValue
             };
           }
@@ -99,12 +100,12 @@ namespace OpenProject.Revit.Data
               ViewPointX = c.X.ToMeters(),
               ViewPointY = c.Y.ToMeters(),
               ViewPointZ = c.Z.ToMeters(),
-              UpX = up.X.ToMeters(),
-              UpY = up.Y.ToMeters(),
-              UpZ = up.Z.ToMeters(),
-              DirectionX = vi.X.ToMeters() * -1,
-              DirectionY = vi.Y.ToMeters() * -1,
-              DirectionZ = vi.Z.ToMeters() * -1,
+              UpX = up.X,
+              UpY = up.Y,
+              UpZ = up.Z,
+              DirectionX = vi.X * -1,
+              DirectionY = vi.Y * -1,
+              DirectionZ = vi.Z * -1,
               FieldOfView = zoomValue
             };
           }
