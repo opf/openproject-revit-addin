@@ -65,8 +65,6 @@ namespace OpenProject.Revit.Data
             XYZ vi = t.ForwardDirection;
             XYZ up = t.UpDirection;
 
-
-
             v.OrthogonalCamera = new BcfViewpointOrthogonalCameraViewModel
             {
               ViewPointX = c.X.ToMeters(),

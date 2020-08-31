@@ -96,7 +96,10 @@ namespace OpenProject.Shared
         apiViewpoint.Components = new iabi.BCF.APIObjects.V21.Components();
         apiViewpoint.Components.Coloring = new System.Collections.Generic.List<iabi.BCF.APIObjects.V21.Coloring>();
         apiViewpoint.Components.Selection = new System.Collections.Generic.List<iabi.BCF.APIObjects.V21.Component>();
-        apiViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility();
+        apiViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
+        {
+          Default_visibility = true
+        };
 
         foreach (var component in bcfViewpointViewModel.Components)
         {

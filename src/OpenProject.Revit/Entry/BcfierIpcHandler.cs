@@ -161,7 +161,10 @@ namespace OpenProject.Revit.Entry
         };
 
         var jsonPayload = JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Viewpoint, serializerSettings));
-        jsonPayload["components"] = JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Components, serializerSettings));
+        if (messageContent.Viewpoint.Components != null)
+        {
+          jsonPayload["components"] = JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Components, serializerSettings));
+        }
         jsonPayload["snapshot"] = messageContent.SnapshotPngBase64;
         //var payloadString = JsonConvert.SerializeObject(messageContent);
         var payloadString = jsonPayload.ToString();
