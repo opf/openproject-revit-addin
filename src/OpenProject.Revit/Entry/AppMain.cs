@@ -31,8 +31,8 @@ namespace OpenProject.Revit.Entry
         RibbonPanel panel = application.CreateRibbonPanel("OpenProject");
 
         // Button Data
-        PushButton browserButton = panel.AddItem(new PushButtonData("Browser",
-                                                                     "Browser",
+        PushButton browserButton = panel.AddItem(new PushButtonData("Open OpenProject",
+                                                                     "Open OpenProject",
                                                                      Path.Combine(_path, "OpenProject.Revit.dll"),
                                                                      "OpenProject.Revit.Entry.CmdMain")) as PushButton;
         // Images and Tooltip
