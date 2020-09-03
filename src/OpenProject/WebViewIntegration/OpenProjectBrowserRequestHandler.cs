@@ -44,7 +44,6 @@ namespace OpenProject.WebViewIntegration
 
       if (isValidExternalUrl)
       {
-        ConfigurationHandler.SaveLastVisitedPage(url);
         return false;
       }
 
