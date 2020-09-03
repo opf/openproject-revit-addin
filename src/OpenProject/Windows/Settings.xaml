@@ -6,7 +6,7 @@
   Title="Settings"
   Width="550"
   MinHeight="200"
-  Icon="/OpenProject;component/Assets/icon.ico"
+  Icon="/OpenProject;component/Assets/openproject.ico"
   SizeToContent="Height">
   <Grid Margin="5">
     <Grid.RowDefinitions>

@@ -6,7 +6,7 @@
   Name="SnapWindow"
   Title="snapshot.png"
   MaxHeight="800"
-  Icon="/OpenProject;component/Assets/icon.ico"
+  Icon="/OpenProject;component/Assets/openproject.ico"
   SizeToContent="WidthAndHeight">
   <Window.Resources>
     <valueConverters:PathToImageConv x:Key="pathToImageConv" />

@@ -5,7 +5,7 @@
   Title="Components"
   Width="700"
   Height="500"
-  Icon="/OpenProject;component/Assets/icon.ico">
+  Icon="/OpenProject;component/Assets/openproject.ico">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="auto" />
