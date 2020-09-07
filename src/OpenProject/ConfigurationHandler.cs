@@ -2,134 +2,77 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json.Linq;
+using Config.Net;
 
 namespace OpenProject
 {
   public static class ConfigurationHandler
   {
-    private static bool _shouldReloadInstances = true;
-    private static List<string> _lastLoadedAllowedInstances;
+    static ConfigurationHandler()
+    {
+      var configurationFilePath = GetConfigurationFilePath();
+      Settings = new ConfigurationBuilder<IOpenProjectSettings>()
+        .UseJsonFile(configurationFilePath)
+        .Build();
+    }
+
+    public static IOpenProjectSettings Settings { get; }
 
     public static bool ShouldEnableDevelopmentTools()
     {
-      var configuration = ReadConfigurationFile();
-      var setting = configuration["EnableDevelopmentTools"];
-      if (setting == null)
-      {
-        return false;
-      }
-
-      return setting.Value<bool>();
+      return Settings.EnableDevelopmentTools;
     }
 
     public static void RemoveSavedInstance(string instanceUrl)
     {
-      var configuration = ReadConfigurationFile();
-      var existingValues = configuration["OpenProjectInstances"];
-      if (existingValues != null)
+      if (Settings.OpenProjectInstances?.Any() ?? false)
       {
-        var array = existingValues as JArray;
-        var existing = array.FirstOrDefault(e => e.ToString() == instanceUrl);
+        var existingValues = Settings.GetOpenProjectInstances();
+        var existing = existingValues.FirstOrDefault(e => e.ToString() == instanceUrl);
         if (existing != null)
         {
-          array.Remove(existing);
-          SaveConfigurationFile(configuration);
-          _shouldReloadInstances = true;
+          existingValues.Remove(existing);
+          Settings.SetOpenProjectInstances(existingValues);
         }
       }
     }
 
     public static List<string> LoadAllInstances()
     {
-      if (_shouldReloadInstances)
-      {
-        var configuration = ReadConfigurationFile();
-        var existingValues = configuration["OpenProjectInstances"];
-        if (existingValues != null
-            && existingValues is JArray array)
-        {
-          _lastLoadedAllowedInstances = existingValues.Select(i => i.ToString()).ToList();
-          _shouldReloadInstances = false;
-          return _lastLoadedAllowedInstances.ToList();
-        }
-
-        return new List<string>();
-      }
-
       // Calling ToList() here to ensure the caller doesn't get the
       // locally cached list, thus preventing accidental modifications
-      return _lastLoadedAllowedInstances.ToList();
+      return Settings.GetOpenProjectInstances().ToList();
     }
 
     public static void SaveLastVisitedPage(string url)
     {
-      var configuration = ReadConfigurationFile();
-      
-      configuration["LastVisitedPage"] = url;
-      
-      SaveConfigurationFile(configuration);
+      Settings.LastVisitedPage = url;
     }
 
     public static string LastVisitedPage()
     {
-      var configuration = ReadConfigurationFile();
-      var lastVisitedPage = configuration["LastVisitedPage"];
-      if (lastVisitedPage == null)
-      {
-        return String.Empty;
-      } else
-      {
-        return lastVisitedPage.ToObject<string>();
-      }
+      return Settings.LastVisitedPage ?? string.Empty;
     }
-
 
     public static void SaveSelectedInstance(string instanceUrl)
     {
-      var configuration = ReadConfigurationFile();
-      var existingValues = configuration["OpenProjectInstances"];
+      var existingValues = Settings.GetOpenProjectInstances();
       if (existingValues == null)
       {
-        configuration["OpenProjectInstances"] = new JArray();
-        (configuration["OpenProjectInstances"] as JArray).Add(instanceUrl);
+        Settings.SetOpenProjectInstances(new List<string>
+        {
+          instanceUrl
+        });
       }
       else
       {
-        var array = existingValues as JArray;
-        var existing = array.FirstOrDefault(e => e.ToString() == instanceUrl);
+        var existing = existingValues.FirstOrDefault(e => e.ToString() == instanceUrl);
         if (existing != null)
         {
-          array.Remove(existing);
+          existingValues.Remove(existing);
         }
-        array.AddFirst(instanceUrl);
-      }
-
-      SaveConfigurationFile(configuration);
-      _shouldReloadInstances = true;
-    }
-
-    private static JObject ReadConfigurationFile()
-    {
-      var configurationFilePath = GetConfigurationFilePath();
-      using (var fs = File.OpenRead(configurationFilePath))
-      {
-        using (var sr = new StreamReader(fs))
-        {
-          var json = sr.ReadToEnd();
-          var jObject = JObject.Parse(json);
-          return jObject;
-        }
-      }
-    }
-
-    private static void SaveConfigurationFile(JObject configuration)
-    {
-      var json = configuration.ToString(Newtonsoft.Json.Formatting.Indented);
-      var configurationFilePath = GetConfigurationFilePath();
-      using (var fs = File.CreateText(configurationFilePath))
-      {
-        fs.Write(json);
+        existingValues.Insert(0, instanceUrl);
+        Settings.SetOpenProjectInstances(existingValues);
       }
     }
 
