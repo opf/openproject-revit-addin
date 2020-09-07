@@ -107,7 +107,6 @@ namespace OpenProject.Revit.Data
               FieldOfView = zoomValue
             };
           }
-
         }
         //COMPONENTS PART
         string versionName = doc.Application.VersionName;
