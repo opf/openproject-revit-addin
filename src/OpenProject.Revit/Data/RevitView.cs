@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,7 +47,7 @@ namespace OpenProject.Revit.Data
             //vector going from BR to TL
             XYZ diagVector = topLeft.Subtract(bottomRight);
             //length of the vector
-            double dist = topLeft.DistanceTo(bottomRight) / 2;
+            double dist = topLeft.DistanceTo(bottomRight);
 
             //ViewToWorldScale value
             zoomValue = (dist * Math.Sin(diagVector.AngleTo(view3D.RightDirection))).ToMeters();
