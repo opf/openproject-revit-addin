@@ -121,6 +121,10 @@ namespace OpenProject.WebViewIntegration
       {
         OnAppForegroundRequestReceived?.Invoke(this);
       }
+      else if (messageType == MessageTypes.VIEWPOINT_GENERATED)
+      {
+        OnAppForegroundRequestReceived?.Invoke(this);
+      }
 
       var messageData = JsonConvert.SerializeObject(new { messageType, trackingId, messagePayload });
       var encodedMessage = JsonConvert.ToString(messageData);
