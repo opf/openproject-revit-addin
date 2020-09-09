@@ -62,7 +62,6 @@ namespace OpenProject.Revit.Entry
       if (v.OrthogonalCamera == null)
         return;
       //type = "OrthogonalCamera";
-      var zoom = v.OrthogonalCamera.ViewToWorldScale.ToInternalRevitUnit();
       var cameraDirection = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.DirectionX,
         v.OrthogonalCamera.DirectionY,
         v.OrthogonalCamera.DirectionZ);
@@ -102,16 +101,16 @@ namespace OpenProject.Revit.Entry
 
       uidoc.RequestViewChange(orthoView);
 
-      double x = zoom;
+      var zoom = v.OrthogonalCamera.ViewToWorldScale.ToInternalRevitUnit();
       app.ViewActivated += (s, e) =>
        {
          // Setting the zoom value happens after the actual view is displayed
          if (e.CurrentActiveView.Id.IntegerValue == orthoView.Id.IntegerValue)
          {
            //set UI view position and zoom
-           XYZ m_xyzTl = uidoc.ActiveView.Origin.Add(uidoc.ActiveView.UpDirection.Multiply(x)).Subtract(uidoc.ActiveView.RightDirection.Multiply(x));
-           XYZ m_xyzBr = uidoc.ActiveView.Origin.Subtract(uidoc.ActiveView.UpDirection.Multiply(x)).Add(uidoc.ActiveView.RightDirection.Multiply(x));
-           uidoc.GetOpenUIViews().First().ZoomAndCenterRectangle(m_xyzTl, m_xyzBr);
+           XYZ m_xyzTopLeft = uidoc.ActiveView.Origin.Add(uidoc.ActiveView.UpDirection.Multiply(zoom)).Subtract(uidoc.ActiveView.RightDirection.Multiply(zoom));
+           XYZ m_xyzBottomRight = uidoc.ActiveView.Origin.Subtract(uidoc.ActiveView.UpDirection.Multiply(zoom)).Add(uidoc.ActiveView.RightDirection.Multiply(zoom));
+           uidoc.GetOpenUIViews().First().ZoomAndCenterRectangle(m_xyzTopLeft, m_xyzBottomRight);
          }
        };
     }
