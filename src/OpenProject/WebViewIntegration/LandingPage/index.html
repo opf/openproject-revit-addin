@@ -42,6 +42,10 @@
         --font-family-monospace: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
       }
 
+      body {
+        background-color: #b4b4b44d;
+      }
+
       .header {
         line-height: 1.5;
         text-align: left;
@@ -74,8 +78,9 @@
       }
       
       .landing_page_container {
-        margin-bottom: 75px;
-        padding: 120px 20px 20px 20px;
+        margin: 125px auto 0 auto;
+        padding: 80px 40px 40px 40px;
+        max-width: 800px;
         background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(244,244,244,1) 71%);
       }
 
@@ -598,6 +603,7 @@
         settingsContainer = document.querySelector('.settings_container');
 
         setupRevitCommunicationChannel();
+      });
     </script>
   </head>
 
