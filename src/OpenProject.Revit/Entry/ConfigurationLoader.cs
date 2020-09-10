@@ -1,38 +1,37 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Config.Net;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace OpenProject.Revit.Entry
 {
   public static class ConfigurationLoader
   {
-    public static string GetBcfierWinExecutablePath()
+    static ConfigurationLoader()
     {
       var configurationFilePath = GetConfigurationFilePath();
-      using (var fs = File.OpenRead(configurationFilePath))
+      Settings = new ConfigurationBuilder<IOpenProjectRevitSettings>()
+        .UseJsonFile(configurationFilePath)
+        .Build();
+    }
+
+    public static IOpenProjectRevitSettings Settings { get; }
+
+    public static string GetBcfierWinExecutablePath()
+    {
+      var bcfierWinExecutablePath =  Settings.OpenProjectWindowsExecutablePath;
+      if (!System.IO.Path.IsPathRooted(bcfierWinExecutablePath))
       {
-        using (var sr = new StreamReader(fs))
-        {
-          var json = sr.ReadToEnd();
-          var jObject = JObject.Parse(json);
-          var bcfierWinExecutablePath = jObject["OpenProjectWindowsExecutablePath"].ToString();
-
-          if (!System.IO.Path.IsPathRooted(bcfierWinExecutablePath))
-          {
-            var currentFolder = GetCurrentDllDirectory();
-            bcfierWinExecutablePath = Path.Combine(currentFolder, bcfierWinExecutablePath);
-          }
-
-          if (!File.Exists(bcfierWinExecutablePath))
-          {
-            throw new Exception($"The OpenProject.Windows.exe path in the configuration is given as: \"{bcfierWinExecutablePath}\", but the file could not be found.");
-          }
-
-          return bcfierWinExecutablePath;
-        }
+        var currentFolder = GetCurrentDllDirectory();
+        bcfierWinExecutablePath = Path.Combine(currentFolder, bcfierWinExecutablePath);
       }
+
+      if (!File.Exists(bcfierWinExecutablePath))
+      {
+        throw new Exception($"The OpenProject.Windows.exe path in the configuration is given as: \"{bcfierWinExecutablePath}\", but the file could not be found.");
+      }
+
+      return bcfierWinExecutablePath;
     }
 
     private static string GetConfigurationFilePath()

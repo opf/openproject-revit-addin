@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using OpenProject.Api;
 using OpenProject.Data.Utils;
 using OpenProject.Shared;
@@ -69,7 +69,18 @@ namespace OpenProject.UserControls
         }
       }
 
-      Browser.Address = EmbeddedLandingPageHandler.GetEmbeddedLandingPageIndexUrl();
+      var knownGoodUrls = ConfigurationHandler.LoadAllInstances();
+      var lastVisitedPage = ConfigurationHandler.LastVisitedPage();
+      var isWhiteListedUrl = knownGoodUrls.Any(goodUrl => lastVisitedPage.StartsWith(goodUrl, System.StringComparison.InvariantCultureIgnoreCase));
+
+      if (isWhiteListedUrl)
+      {
+        Browser.Address = lastVisitedPage;
+      }
+      else
+      {
+        Browser.Address = EmbeddedLandingPageHandler.GetEmbeddedLandingPageIndexUrl();
+      }
 
       if (UserSettings.GetBool("checkupdates"))
         CheckUpdates();

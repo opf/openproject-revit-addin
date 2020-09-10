@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-US" dir="ltr" class="wf-lato-n3-active wf-lato-n4-active wf-active">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -8,7 +8,6 @@
     <meta name="description" content="Revit pluging of OpenProject, Web-based open source project management software to support teams along the entire project management life-cycle: task management✓ Gantt charts✓ agile boards✓ team collaboration✓ bug tracking✓ roadmap✓ time and cost reporting✓ FREE trial!">
     <link rel="stylesheet" href="./assets/main.css">
     <link href="./assets/font-awesome-css/all.css" rel="stylesheet">
-    <script src="./assets/jquery-3.1.0.min.js.Download"></script>
     <style>
       :root {
         --blue: #007bff;
@@ -212,6 +211,12 @@
       }
 
       .claim__container, .previous_instances_title {
+        display: flex;
+        place-content: center center;
+        text-align: center;
+      }
+
+      .plugin_version {
         display: flex;
         place-content: center center;
         text-align: center;
@@ -644,14 +649,14 @@
 
           <div class="signup">
             <p>
-              Don’t you have an account yet? Get one
+              Don’t you have an OpenProject instance yet? Get one in our Cloud
               <a href="https://start.openproject.com/go/bim" target="_blank">
                 here
               </a>
             </p>
 
             <p>
-              Don’t you remember your organization's name on OpenProject? Find it 
+              Don’t you remember your organization's name in the OpenProject Cloud? Find it 
               <a href="https://www.openproject.org/request-organization" target="_blank">
                 here
               </a>
@@ -701,6 +706,11 @@
           </div>
         </div>
       </div>
+        <div class="plugin_version">
+            <p>
+                Plugin Version: @@PLUGIN_VERSION@@
+            </p>
+        </div>
     </div>
 
     <template id="listItemTemplate">

@@ -124,6 +124,20 @@ namespace OpenProject.Revit.Entry
       }
     }
 
+    public void SendOpenSettingsRequestToDesktopApp()
+    {
+      var eventArgs = new WebUIMessageEventArgs(MessageTypes.GO_TO_SETTINGS, "0", string.Empty);
+      var jsonEventArgs = JsonConvert.SerializeObject(eventArgs);
+      _sendData(jsonEventArgs);
+    }
+
+    public void SendBringBrowserToForegroundRequestToDesktopApp()
+    {
+      var eventArgs = new WebUIMessageEventArgs(MessageTypes.SET_BROWSER_TO_FOREGROUND, "0", string.Empty);
+      var jsonEventArgs = JsonConvert.SerializeObject(eventArgs);
+      _sendData(jsonEventArgs);
+    }
+
     /// <summary>
     /// Same as in the windows app, but here we generate a VisInfo that is attached to the view
     /// </summary>
@@ -147,7 +161,10 @@ namespace OpenProject.Revit.Entry
         };
 
         var jsonPayload = JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Viewpoint, serializerSettings));
-        jsonPayload["components"] = JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Components, serializerSettings));
+        if (messageContent.Viewpoint.Components != null)
+        {
+          jsonPayload["components"] = JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Components, serializerSettings));
+        }
         jsonPayload["snapshot"] = messageContent.SnapshotPngBase64;
         //var payloadString = JsonConvert.SerializeObject(messageContent);
         var payloadString = jsonPayload.ToString();

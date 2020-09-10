@@ -5,12 +5,11 @@
   xmlns:ctr="clr-namespace:OpenProject.UserControls;assembly=OpenProject"
   xmlns:data="clr-namespace:OpenProject.Data;assembly=OpenProject"
   Name="mainWin"
-  Title="BCFier for Windows"
-  Width="700"
-  Height="700"
+  Title="OpenProject Revit Add-in"
   Closing="Window_Closing"
-  Icon="Assets/icon.ico"
-  Loaded="MainWindow_OnLoaded">
+  Icon="Assets/openproject.ico"
+  Loaded="MainWindow_OnLoaded"
+  WindowStartupLocation="Manual">
   <Grid>
     <ctr:BcfierPanel
       Name="Bcfier"

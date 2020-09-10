@@ -1,4 +1,6 @@
-﻿using System.ComponentModel;
+﻿using OpenProject.WebViewIntegration;
+using System;
+using System.ComponentModel;
 using System.Windows;
 
 namespace OpenProject.Windows
@@ -8,9 +10,18 @@ namespace OpenProject.Windows
   /// </summary>
   public partial class MainWindow : Window
   {
+    private const double WindowMinWidth = 682.00;
     public MainWindow()
     {
+      this.Width = MainWindowInitialWidth();
+      this.Height = System.Windows.SystemParameters.PrimaryScreenWidth; // Full height.
+      this.Top = 0;
+      this.Left = SystemParameters.PrimaryScreenWidth - this.Width;
       InitializeComponent();
+      JavaScriptBridge.Instance
+        .OnAppForegroundRequestReceived += (s) => {
+          Application.Current.Dispatcher.Invoke(() => Activate());
+        };
     }
 
     /// <summary>
@@ -24,6 +35,19 @@ namespace OpenProject.Windows
 
     private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
     {
+    }
+
+    private double MainWindowInitialWidth()
+    {
+      if (SystemParameters.PrimaryScreenHeight < WindowMinWidth)
+      {
+        return SystemParameters.PrimaryScreenHeight;
+      }
+      else
+      {
+        return Math.Max(WindowMinWidth, System.Windows.SystemParameters.PrimaryScreenHeight * 0.25);
+      }
+
     }
   }
 }

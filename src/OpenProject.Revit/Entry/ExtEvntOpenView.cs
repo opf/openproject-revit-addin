@@ -34,7 +34,7 @@ namespace OpenProject.Revit.Entry
         // IS ORTHOGONAL
         if (v.OrthogonalCamera != null)
         {
-          ShowOrthogonalView(v, doc, uidoc);
+          ShowOrthogonalView(v, doc, uidoc, app);
         }
         //perspective
         else if (v.PerspectiveCamera != null)
@@ -57,21 +57,21 @@ namespace OpenProject.Revit.Entry
       }
     }
 
-    private static void ShowOrthogonalView(BcfViewpointViewModel v, Document doc, UIDocument uidoc)
+    private static void ShowOrthogonalView(BcfViewpointViewModel v, Document doc, UIDocument uidoc, UIApplication app)
     {
       if (v.OrthogonalCamera == null)
         return;
       //type = "OrthogonalCamera";
-      var zoom = v.OrthogonalCamera.ViewToWorldScale.ToFeet();
+      var zoom = v.OrthogonalCamera.ViewToWorldScale.ToInternalRevitUnit();
       var cameraDirection = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.DirectionX,
         v.OrthogonalCamera.DirectionY,
         v.OrthogonalCamera.DirectionZ);
       var cameraUpVector = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.UpX,
         v.OrthogonalCamera.UpY,
         v.OrthogonalCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.ViewPointX,
-        v.OrthogonalCamera.ViewPointY,
-        v.OrthogonalCamera.ViewPointZ);
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.ViewPointX.ToInternalRevitUnit(),
+        v.OrthogonalCamera.ViewPointY.ToInternalRevitUnit(),
+        v.OrthogonalCamera.ViewPointZ.ToInternalRevitUnit());
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, true);
 
       View3D orthoView = null;
@@ -103,11 +103,17 @@ namespace OpenProject.Revit.Entry
       uidoc.RequestViewChange(orthoView);
 
       double x = zoom;
-
-      //set UI view position and zoom
-      XYZ m_xyzTl = uidoc.ActiveView.Origin.Add(uidoc.ActiveView.UpDirection.Multiply(x)).Subtract(uidoc.ActiveView.RightDirection.Multiply(x));
-      XYZ m_xyzBr = uidoc.ActiveView.Origin.Subtract(uidoc.ActiveView.UpDirection.Multiply(x)).Add(uidoc.ActiveView.RightDirection.Multiply(x));
-      uidoc.GetOpenUIViews().First().ZoomAndCenterRectangle(m_xyzTl, m_xyzBr);
+      app.ViewActivated += (s, e) =>
+       {
+         // Setting the zoom value happens after the actual view is displayed
+         if (e.CurrentActiveView.Id.IntegerValue == orthoView.Id.IntegerValue)
+         {
+           //set UI view position and zoom
+           XYZ m_xyzTl = uidoc.ActiveView.Origin.Add(uidoc.ActiveView.UpDirection.Multiply(x)).Subtract(uidoc.ActiveView.RightDirection.Multiply(x));
+           XYZ m_xyzBr = uidoc.ActiveView.Origin.Subtract(uidoc.ActiveView.UpDirection.Multiply(x)).Add(uidoc.ActiveView.RightDirection.Multiply(x));
+           uidoc.GetOpenUIViews().First().ZoomAndCenterRectangle(m_xyzTl, m_xyzBr);
+         }
+       };
     }
 
     private static void ShowPerspectiveView(BcfViewpointViewModel v, Document doc, UIDocument uidoc)

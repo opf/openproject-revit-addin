@@ -30,6 +30,10 @@ namespace OpenProject.WebViewIntegration
 
     public delegate void WebUIMessageReceivedEventHandler(object sender, WebUIMessageEventArgs e);
 
+    public event AppForegroundRequestReceivedEventHandler OnAppForegroundRequestReceived;
+
+    public delegate void AppForegroundRequestReceivedEventHandler(object sender);
+
     private void ChangeLoadingState(object sender, object eventArgs)
     {
       isLoaded = true;
@@ -83,6 +87,10 @@ namespace OpenProject.WebViewIntegration
       {
         VisitUrl(LandingIndexPageUrl());
       }
+      else if (messageType == MessageTypes.SET_BROWSER_TO_FOREGROUND)
+      {
+        OnAppForegroundRequestReceived?.Invoke(this);
+      }
       else
       {
         var eventArgs = new WebUIMessageEventArgs(messageType, trackingId, messagePayload);
@@ -104,6 +112,18 @@ namespace OpenProject.WebViewIntegration
         // This message means we should exit the application
         System.Environment.Exit(0);
         return;
+      }
+      else if (messageType == MessageTypes.GO_TO_SETTINGS)
+      {
+        VisitUrl(LandingIndexPageUrl());
+      }
+      else if (messageType == MessageTypes.SET_BROWSER_TO_FOREGROUND)
+      {
+        OnAppForegroundRequestReceived?.Invoke(this);
+      }
+      else if (messageType == MessageTypes.VIEWPOINT_GENERATED)
+      {
+        OnAppForegroundRequestReceived?.Invoke(this);
       }
 
       var messageData = JsonConvert.SerializeObject(new { messageType, trackingId, messagePayload });

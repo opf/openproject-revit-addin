@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\icon.ico" />
+    <None Remove="Assets\openproject.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\icon.ico" />
+    <Resource Include="Assets\openproject.ico" />
   </ItemGroup>
 
 </Project>

@@ -65,26 +65,25 @@ namespace OpenProject.Revit.Data
 
     public static XYZ GetRevitXYZ(double X, double Y, double Z)
     {
-      return new XYZ(X.ToFeet(), Y.ToFeet(), Z.ToFeet());
+      return new XYZ(X.ToInternalRevitUnit(), Y.ToInternalRevitUnit(), Z.ToInternalRevitUnit());
     }
 
     public static XYZ GetRevitXYZ(Shared.ViewModels.Bcf.BcfPointOrVectorViewModel d)
     {
-      return new XYZ(d.X.ToFeet(),d.Y.ToFeet(),d.Z.ToFeet());
+      return new XYZ(d.X.ToInternalRevitUnit(),d.Y.ToInternalRevitUnit(),d.Z.ToInternalRevitUnit());
     }
 
     /// <summary>
     /// Converts feet units to meters
     /// </summary>
-    /// <param name="feet">Value in feet to be converted to meters</param>
+    /// <param name="internalUnits">Value in internal Revit units to be converted to meters</param>
     /// <returns></returns>
-    public static double ToMeters(this double feet)
+    public static double ToMeters(this double internalUnits)
     {
 #if Version2021
-      return UnitUtils.ConvertFromInternalUnits(feet, UnitTypeId.Meters);
+      return UnitUtils.ConvertFromInternalUnits(internalUnits, UnitTypeId.Meters);
 #else
-      return UnitUtils.ConvertFromInternalUnits(feet, DisplayUnitType.DUT_METERS);
-
+      return UnitUtils.ConvertFromInternalUnits(internalUnits, DisplayUnitType.DUT_METERS);
 #endif
     }
     /// <summary>
@@ -92,12 +91,12 @@ namespace OpenProject.Revit.Data
     /// </summary>
     /// <param name="meters">Value in feet to be converted to feet</param>
     /// <returns></returns>
-    public static double ToFeet(this double meters)
+    public static double ToInternalRevitUnit(this double meters)
     {
 #if Version2021
-      return UnitUtils.ConvertFromInternalUnits(meters, UnitTypeId.Feet);
+      return UnitUtils.ConvertToInternalUnits(meters, UnitTypeId.Meters);
 #else
-      return UnitUtils.ConvertFromInternalUnits(meters, DisplayUnitType.DUT_METERS);
+      return UnitUtils.ConvertToInternalUnits(meters, DisplayUnitType.DUT_METERS);
 #endif
     }
   }

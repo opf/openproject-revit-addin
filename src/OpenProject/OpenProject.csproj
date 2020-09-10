@@ -22,7 +22,7 @@
   <ItemGroup>
     <None Remove="Assets\BCFierIcon16x16.png" />
     <None Remove="Assets\BCFierIcon32x32.png" />
-    <None Remove="Assets\icon.ico" />
+   <None Remove="Assets\openproject.ico" />
     <None Remove="WebViewIntegration\LandingPage\index.html" />
     <None Remove="WebViewIntegration\LandingPage\LandingPage.zip" />
   </ItemGroup>
@@ -44,7 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\icon.ico" />
+   <Resource Include="Assets\openproject.ico" />
   </ItemGroup>
 
   <Target Name="ZipEmbeddedLandingPage" BeforeTargets="BeforeBuild" Condition="'$(BuildingInsideVisualStudio)' == 'true'">

@@ -4,7 +4,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   Title="A new BCFier is available!"
   MinWidth="300"
-  Icon="../Assets/icon.ico"
+  Icon="../Assets/openproject.ico"
   SizeToContent="WidthAndHeight">
   <Grid Margin="10">
     <Grid.RowDefinitions>

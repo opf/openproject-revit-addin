@@ -68,7 +68,7 @@ class Build : NukeBuild
       .SetProjectFile(Solution));
     // This separate call uses the NuGet.CommandLine package to do a traditional
     // MSBuild restore. This is required to correctly store the conditional references
-    // in the BCFier.Revit/packages.config file, which restores different Revit API
+    // in the OpenProject.Revit/packages.config file, which restores different Revit API
     // NuGet packages depending on the build configuration
     NuGetRestore(c => c.SetSolutionDirectory(RootDirectory));
   }
@@ -78,15 +78,25 @@ class Build : NukeBuild
     .Executes(() =>
     {
       var landingPageFolder = RootDirectory / "src" / "OpenProject" / "WebViewIntegration" / "LandingPage";
-      var zipOutputPath = landingPageFolder / "LandingPage.zip";
-      if (File.Exists(zipOutputPath))
+      var landingPageIndexPath = landingPageFolder / "index.html";
+      var originalLandingPageIndexContent = ReadAllText(landingPageIndexPath);
+      try
       {
-        DeleteFile(zipOutputPath);
-      }
+        WriteAllText(landingPageIndexPath, originalLandingPageIndexContent.Replace("@@PLUGIN_VERSION@@", GitVersion.NuGetVersion));
+        var zipOutputPath = landingPageFolder / "LandingPage.zip";
+        if (File.Exists(zipOutputPath))
+        {
+          DeleteFile(zipOutputPath);
+        }
 
-      var tempZipPath = OutputDirectory / $"{Guid.NewGuid()}.zip";
-      ZipFile.CreateFromDirectory(landingPageFolder, tempZipPath);
-      MoveFile(tempZipPath, zipOutputPath);
+        var tempZipPath = OutputDirectory / $"{Guid.NewGuid()}.zip";
+        ZipFile.CreateFromDirectory(landingPageFolder, tempZipPath);
+        MoveFile(tempZipPath, zipOutputPath);
+      }
+      finally
+      {
+        WriteAllText(landingPageIndexPath, originalLandingPageIndexContent);
+      }
     });
 
   Target WriteVersionAndRepoInfo => _ => _
@@ -208,7 +218,7 @@ namespace OpenProject.Shared
       .Executes(() =>
       {
         // The Inno Setup tool generates a single, self contained setup application
-        // in the root directory as BCFier.exe. This can be distributed for installation
+        // in the root directory as OpenProject.exe. This can be distributed for installation
         InnoSetup($"{RootDirectory / "InnoSetup" / "OpenProject.iss"}");
       });
 
@@ -218,7 +228,7 @@ namespace OpenProject.Shared
       .Executes(async () =>
       {
         var releaseTag = $"v{GitVersion.SemVer}";
-        var isStableRelease = GitVersion.BranchName.Equals("master") || GitVersion.BranchName.Equals("origin/master");
+        var isStableRelease = GitVersion.BranchName.Equals("master") || GitVersion.BranchName.Equals("origin/master") || GitVersion.BranchName.Equals("main") || GitVersion.BranchName.Equals("origin/main");
 
         var repositoryInfo = GetGitHubRepositoryInfo(GitRepository);
         var installationFile = GlobFiles(OutputDirectory, "OpenProject.Revit.exe").NotEmpty().ToArray();

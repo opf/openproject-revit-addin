@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,10 +47,10 @@ namespace OpenProject.Revit.Data
             //vector going from BR to TL
             XYZ diagVector = topLeft.Subtract(bottomRight);
             //length of the vector
-            double dist = topLeft.DistanceTo(bottomRight) / 2;
+            double dist = topLeft.DistanceTo(bottomRight);
 
             //ViewToWorldScale value
-            zoomValue = dist * Math.Sin(diagVector.AngleTo(view3D.RightDirection)).ToMeters();
+            zoomValue = (dist * Math.Sin(diagVector.AngleTo(view3D.RightDirection))).ToMeters();
 
             // **** CUSTOM VALUE FOR TEKLA **** //
             // calculated experimentally, not sure why but it works
@@ -65,18 +65,17 @@ namespace OpenProject.Revit.Data
             XYZ vi = t.ForwardDirection;
             XYZ up = t.UpDirection;
 
-
             v.OrthogonalCamera = new BcfViewpointOrthogonalCameraViewModel
             {
               ViewPointX = c.X.ToMeters(),
               ViewPointY = c.Y.ToMeters(),
               ViewPointZ = c.Z.ToMeters(),
-              UpX = up.X.ToMeters(),
-              UpY = up.Y.ToMeters(),
-              UpZ = up.Z.ToMeters(),
-              DirectionX = vi.X.ToMeters() * -1,
-              DirectionY = vi.Y.ToMeters() * -1,
-              DirectionZ = vi.Z.ToMeters() * -1,
+              UpX = up.X,
+              UpY = up.Y,
+              UpZ = up.Z,
+              DirectionX = vi.X * -1,
+              DirectionY = vi.Y * -1,
+              DirectionZ = vi.Z * -1,
               ViewToWorldScale = zoomValue
             };
           }
@@ -99,16 +98,15 @@ namespace OpenProject.Revit.Data
               ViewPointX = c.X.ToMeters(),
               ViewPointY = c.Y.ToMeters(),
               ViewPointZ = c.Z.ToMeters(),
-              UpX = up.X.ToMeters(),
-              UpY = up.Y.ToMeters(),
-              UpZ = up.Z.ToMeters(),
-              DirectionX = vi.X.ToMeters() * -1,
-              DirectionY = vi.Y.ToMeters() * -1,
-              DirectionZ = vi.Z.ToMeters() * -1,
+              UpX = up.X,
+              UpY = up.Y,
+              UpZ = up.Z,
+              DirectionX = vi.X * -1,
+              DirectionY = vi.Y * -1,
+              DirectionZ = vi.Z * -1,
               FieldOfView = zoomValue
             };
           }
-
         }
         //COMPONENTS PART
         string versionName = doc.Application.VersionName;

@@ -35,6 +35,9 @@ namespace OpenProject.Shared
     // This event will navigate the browser to the landing/settings page
     public const string GO_TO_SETTINGS = "GoToSettings";
 
+    // This event will attempt to bring the browser window to the foreground
+    public const string SET_BROWSER_TO_FOREGROUND = "SetBrowserToForeground";
+
     public const string VIEWPOINT_DATA = "ShowViewpoint";
     public const string VIEWPOINT_GENERATION_REQUESTED = "ViewpointGenerationRequest";
     public const string VIEWPOINT_GENERATED = "ViewpointData";

@@ -1,5 +1,6 @@
 ﻿using CefSharp;
 using CefSharp.Wpf;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -24,6 +25,21 @@ namespace OpenProject.WebViewIntegration
           });
         }
       };
+
+      // Save all page changes, so that the user can resume to the same
+      // page as last time she used the add-in.
+      DependencyPropertyDescriptor
+        .FromProperty(ChromiumWebBrowser.AddressProperty,
+                      typeof(ChromiumWebBrowser))
+        .AddValueChanged(_webBrowser, (s, e) =>
+        {
+          string newUrl = _webBrowser.Address;
+          // Don't save local file addresses such as the settings page.
+          if (newUrl.StartsWith("http"))
+          {
+            ConfigurationHandler.SaveLastVisitedPage(_webBrowser.Address);
+          }
+        });
 
       // This handles checking of valid urls, otherwise they're opened in
       // the system browser

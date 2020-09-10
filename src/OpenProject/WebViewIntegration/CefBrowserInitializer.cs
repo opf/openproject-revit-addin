@@ -1,4 +1,4 @@
-﻿using OpenProject.Data.Utils;
+using OpenProject.Data.Utils;
 using CefSharp;
 using CefSharp.Wpf;
 using System.Reflection;
@@ -22,7 +22,7 @@ namespace OpenProject.WebViewIntegration
       // is aware that we're accessing from the BCFier app.
       var chromiumVersion = Cef.ChromiumVersion;
       var userAgent = $"Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chromiumVersion} Safari/537.36" +
-        $" /OpenProjectRevitPlugin {VersionsService.Version}";
+        $" /OpenProjectRevitAddIn {VersionsService.Version}";
       settings.UserAgent = userAgent;
 
       // To enable caching, e.g. of assets and cookies, we're using a temp data folder
