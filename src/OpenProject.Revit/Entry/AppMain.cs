@@ -28,11 +28,14 @@ namespace OpenProject.Revit.Entry
       try
       {
         // Tab
-        RibbonPanel panel = application.CreateRibbonPanel("OpenProject");
+        string TabName = "OpenProject";
+        string PanelName = "BCF management";
+        application.CreateRibbonTab(TabName);
+        RibbonPanel panel = application.CreateRibbonPanel(TabName, PanelName);
 
         // Button Data
-        PushButton browserButton = panel.AddItem(new PushButtonData("Open OpenProject",
-                                                                     "Open OpenProject",
+        PushButton browserButton = panel.AddItem(new PushButtonData("OpenProject",
+                                                                     "OpenProject",
                                                                      Path.Combine(_path, "OpenProject.Revit.dll"),
                                                                      "OpenProject.Revit.Entry.CmdMain")) as PushButton;
         // Images and Tooltip
