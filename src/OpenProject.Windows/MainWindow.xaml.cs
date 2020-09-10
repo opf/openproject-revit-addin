@@ -10,7 +10,7 @@ namespace OpenProject.Windows
   /// </summary>
   public partial class MainWindow : Window
   {
-    private const double WindowMinWidth = 1020.00;
+    private const double WindowMinWidth = 682.00;
     public MainWindow()
     {
       this.Width = MainWindowInitialWidth();
