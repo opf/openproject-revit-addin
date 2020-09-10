@@ -10,11 +10,12 @@ namespace OpenProject.Windows
   /// </summary>
   public partial class MainWindow : Window
   {
-    private const double WindowMinWidth = 682.00;
+    private const double WindowMinWidth = 730.00; // This width allows to IFC issue cards even when the OP menu on the left is open.
+    private const double TaskBarHeight = 50; // Height of Windows Task bar.
     public MainWindow()
     {
       this.Width = MainWindowInitialWidth();
-      this.Height = System.Windows.SystemParameters.PrimaryScreenWidth; // Full height.
+      this.Height = System.Windows.SystemParameters.PrimaryScreenHeight - TaskBarHeight; // Full visible window height.
       this.Top = 0;
       this.Left = SystemParameters.PrimaryScreenWidth - this.Width;
       InitializeComponent();
