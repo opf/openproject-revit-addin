@@ -77,11 +77,18 @@
         width: 100%;
       }
       
-      .landing_page_container {
+      .landing_page_container, .settings_container {
         margin: 125px auto 0 auto;
-        padding: 80px 40px 40px 40px;
         max-width: 800px;
         background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(244,244,244,1) 71%);
+      }
+
+      .landing_page_container {
+        padding: 80px 40px 40px 40px;
+      }
+
+      .settings_container {
+        padding: 60px 20px 0 20px;
       }
 
       .form__container {
@@ -218,7 +225,7 @@
         margin-left: 1rem;
         background: #f8f8f8;
         border: 1px solid #dddddd;
-        width: 45px;
+        flex: 0 0 45px;
         color: var(--black);
         transition: background-color .5s;
         border-radius: 2px;
@@ -277,10 +284,6 @@
 
       .add_instance__close i:before {
         color: lightgrey;
-      }
-
-      .settings_container {
-        margin-top: 150px;
       }
 
       .landing_page_container, .settings_container {
