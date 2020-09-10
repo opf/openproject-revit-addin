@@ -158,7 +158,7 @@
         height: 35px;
       }
 
-      #submit-button, .go-button, .add-button {
+      #submit-button, .go-button, .add_instance__add-button {
         margin: 0;
         line-height: inherit;
         overflow: visible;
@@ -193,7 +193,7 @@
         cursor:not-allowed;
       }
 
-      #submit-button:disabled, .add-button:disabled {
+      #submit-button:disabled, .add_instance__add-button:disabled {
         border: 1px solid lightgrey;
         background-color: lightgrey;
         cursor:not-allowed;
@@ -326,8 +326,6 @@
         return url.protocol === "http:" || url.protocol === "https:";
       }
 
-      // Check if the url is valid (only if online)
-      // and the URL belongs to a SAAS project
       function validateInstanceUrl() {
         const instanceUrl = instanceInput.value;
         const domains = ['.openproject.com', '.openproject-edge.com', '.openproject-stage.com'];
@@ -391,9 +389,15 @@
 
       const debouncedValidateInstanceUrl = debounce(validateInstanceUrl, 700);
 
-      // This wires up the button to login to send the selected instance
-      // to the Revit plugin
-      function handleSubmit() {
+      function handleSubmit(event) {
+        if (event) {
+          event.preventDefault();
+        }
+
+        if (addInstanceButton.disabled) {
+          return false; 
+        }
+
         const selectedInstance = instanceInput.value;
 
         if (selectedInstance) {
@@ -453,15 +457,36 @@
         });
       }
 
-      // Setup the instances list 
-      function setUpInstanceInputAndList() {
+      function setUpInstancesList() {
         const addInstanceButtonContainer = document.querySelector('.add_instance__open');
         const addInstanceInput = document.querySelector('.add_instance__input');
         const addInstanceInputContainer = document.querySelector('.add_instance__input_container');
         const closeAddInstanceButton = document.querySelector('.add_instance__close');
 
-        addInstanceButton = addInstanceInputContainer.querySelector('.add-button');
+        addInstanceButton = addInstanceInputContainer.querySelector('.add_instance__add-button');
         addInstanceButton.disabled = true;
+
+        const hideAddInstanceBox = () => {
+          addInstanceInputContainer.style.opacity = '0';
+          closeAddInstanceButton.style.opacity = '0';
+          addInstanceButtonContainer.style.height = 'auto';
+          addInstanceInput.value = '';
+          addInstanceButton.disabled = true;
+          errorContainer.style.display = 'none';
+        }
+
+        const addInstance = () => {
+          const selectedInstance = addInstanceInput.value;
+          allInstances = [...allInstances, selectedInstance];
+
+          window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
+          renderPreviousInstancesList(allInstances);
+        }
+
+        const addInstanceAndHideInstanceBox = () => {          
+          addInstance();
+          hideAddInstanceBox();
+        }
 
         if (allInstances.length > 1) {
           previousListTitle.style.display = 'flex';
@@ -478,26 +503,24 @@
           });
 
           addInstanceButton.addEventListener('click', event => {
-            const selectedInstance = addInstanceInput.value;
-            allInstances = [...allInstances, selectedInstance];
+            addInstanceAndHideInstanceBox();
+          });
+          
+          // Handle Enter key on input
+          addInstanceInput.addEventListener("keyup", function(event) {
+            if (event.keyCode === 13) {
+              event.preventDefault();
 
-            window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
-            renderPreviousInstancesList(allInstances);
+              if (addInstanceButton.disabled) {
+                return false;
+              }
 
-            addInstanceInputContainer.style.opacity = '0';
-            closeAddInstanceButton.style.opacity = '0';
-            addInstanceButtonContainer.style.height = 'auto';
-            addInstanceInput.value = '';
-            addInstanceButton.disabled = true;
+              addInstanceAndHideInstanceBox();
+            }
           });
 
           closeAddInstanceButton.addEventListener('click', event => {
-            addInstanceInputContainer.style.opacity = '0';
-            closeAddInstanceButton.style.opacity = '0';
-            addInstanceButtonContainer.style.height = 'auto';
-            addInstanceInput.value = '';
-            errorContainer.style.display = 'none';
-            addInstanceButton.disabled = true;
+            hideAddInstanceBox();
           });
         }
 
@@ -521,7 +544,7 @@
           errorContainer = document.querySelector('.settings-error');
           instanceInput = document.querySelector('.add_instance__input');
 
-          setUpInstanceInputAndList();
+          setUpInstancesList();
 
           if (navigator.onLine) {
             instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
@@ -575,7 +598,6 @@
         settingsContainer = document.querySelector('.settings_container');
 
         setupRevitCommunicationChannel();
-      });
     </script>
   </head>
 
@@ -594,7 +616,7 @@
       </div>
 
       <div class="form__container">
-        <form id="new_instance_form_wp_site">
+        <form id="new_instance_form_wp_site" onsubmit="handleSubmit(event)">
           <div class="form__wrapper instance_name_input">
             <div class="input__wrapper">
               <input type="text"
@@ -656,7 +678,7 @@
                     autocomplete="off">
             </div>
 
-            <button class="add-button" type="button" name="submit" disabled="true">
+            <button class="add_instance__add-button" type="button" name="submit" disabled="true">
               Add
             </button>
 
