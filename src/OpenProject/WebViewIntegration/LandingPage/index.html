@@ -41,6 +41,10 @@
         --font-family-monospace: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
       }
 
+      body {
+        background-color: #b4b4b44d;
+      }
+
       .header {
         line-height: 1.5;
         text-align: left;
@@ -72,10 +76,18 @@
         width: 100%;
       }
       
-      .landing_page_container {
-        margin-bottom: 75px;
-        padding: 120px 20px 20px 20px;
+      .landing_page_container, .settings_container {
+        margin: 125px auto 0 auto;
+        max-width: 800px;
         background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(244,244,244,1) 71%);
+      }
+
+      .landing_page_container {
+        padding: 80px 40px 40px 40px;
+      }
+
+      .settings_container {
+        padding: 60px 20px 0 20px;
       }
 
       .form__container {
@@ -157,7 +169,7 @@
         height: 35px;
       }
 
-      #submit-button, .go-button, .add-button {
+      #submit-button, .go-button, .add_instance__add-button {
         margin: 0;
         line-height: inherit;
         overflow: visible;
@@ -192,7 +204,7 @@
         cursor:not-allowed;
       }
 
-      #submit-button:disabled, .add-button:disabled {
+      #submit-button:disabled, .add_instance__add-button:disabled {
         border: 1px solid lightgrey;
         background-color: lightgrey;
         cursor:not-allowed;
@@ -218,7 +230,7 @@
         margin-left: 1rem;
         background: #f8f8f8;
         border: 1px solid #dddddd;
-        width: 45px;
+        flex: 0 0 45px;
         color: var(--black);
         transition: background-color .5s;
         border-radius: 2px;
@@ -279,10 +291,6 @@
         color: lightgrey;
       }
 
-      .settings_container {
-        margin-top: 150px;
-      }
-
       .landing_page_container, .settings_container {
         position: absolute;
         z-index: -99;
@@ -331,8 +339,6 @@
         return url.protocol === "http:" || url.protocol === "https:";
       }
 
-      // Check if the url is valid (only if online)
-      // and the URL belongs to a SAAS project
       function validateInstanceUrl() {
         const instanceUrl = instanceInput.value;
         const domains = ['.openproject.com', '.openproject-edge.com', '.openproject-stage.com'];
@@ -396,9 +402,15 @@
 
       const debouncedValidateInstanceUrl = debounce(validateInstanceUrl, 700);
 
-      // This wires up the button to login to send the selected instance
-      // to the Revit plugin
-      function handleSubmit() {
+      function handleSubmit(event) {
+        if (event) {
+          event.preventDefault();
+        }
+
+        if (addInstanceButton.disabled) {
+          return false; 
+        }
+
         const selectedInstance = instanceInput.value;
 
         if (selectedInstance) {
@@ -458,15 +470,36 @@
         });
       }
 
-      // Setup the instances list 
-      function setUpInstanceInputAndList() {
+      function setUpInstancesList() {
         const addInstanceButtonContainer = document.querySelector('.add_instance__open');
         const addInstanceInput = document.querySelector('.add_instance__input');
         const addInstanceInputContainer = document.querySelector('.add_instance__input_container');
         const closeAddInstanceButton = document.querySelector('.add_instance__close');
 
-        addInstanceButton = addInstanceInputContainer.querySelector('.add-button');
+        addInstanceButton = addInstanceInputContainer.querySelector('.add_instance__add-button');
         addInstanceButton.disabled = true;
+
+        const hideAddInstanceBox = () => {
+          addInstanceInputContainer.style.opacity = '0';
+          closeAddInstanceButton.style.opacity = '0';
+          addInstanceButtonContainer.style.height = 'auto';
+          addInstanceInput.value = '';
+          addInstanceButton.disabled = true;
+          errorContainer.style.display = 'none';
+        }
+
+        const addInstance = () => {
+          const selectedInstance = addInstanceInput.value;
+          allInstances = [...allInstances, selectedInstance];
+
+          window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
+          renderPreviousInstancesList(allInstances);
+        }
+
+        const addInstanceAndHideInstanceBox = () => {          
+          addInstance();
+          hideAddInstanceBox();
+        }
 
         if (allInstances.length > 1) {
           previousListTitle.style.display = 'flex';
@@ -483,26 +516,24 @@
           });
 
           addInstanceButton.addEventListener('click', event => {
-            const selectedInstance = addInstanceInput.value;
-            allInstances = [...allInstances, selectedInstance];
+            addInstanceAndHideInstanceBox();
+          });
+          
+          // Handle Enter key on input
+          addInstanceInput.addEventListener("keyup", function(event) {
+            if (event.keyCode === 13) {
+              event.preventDefault();
 
-            window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
-            renderPreviousInstancesList(allInstances);
+              if (addInstanceButton.disabled) {
+                return false;
+              }
 
-            addInstanceInputContainer.style.opacity = '0';
-            closeAddInstanceButton.style.opacity = '0';
-            addInstanceButtonContainer.style.height = 'auto';
-            addInstanceInput.value = '';
-            addInstanceButton.disabled = true;
+              addInstanceAndHideInstanceBox();
+            }
           });
 
           closeAddInstanceButton.addEventListener('click', event => {
-            addInstanceInputContainer.style.opacity = '0';
-            closeAddInstanceButton.style.opacity = '0';
-            addInstanceButtonContainer.style.height = 'auto';
-            addInstanceInput.value = '';
-            errorContainer.style.display = 'none';
-            addInstanceButton.disabled = true;
+            hideAddInstanceBox();
           });
         }
 
@@ -526,7 +557,7 @@
           errorContainer = document.querySelector('.settings-error');
           instanceInput = document.querySelector('.add_instance__input');
 
-          setUpInstanceInputAndList();
+          setUpInstancesList();
 
           if (navigator.onLine) {
             instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
@@ -599,7 +630,7 @@
       </div>
 
       <div class="form__container">
-        <form id="new_instance_form_wp_site">
+        <form id="new_instance_form_wp_site" onsubmit="handleSubmit(event)">
           <div class="form__wrapper instance_name_input">
             <div class="input__wrapper">
               <input type="text"
@@ -661,7 +692,7 @@
                     autocomplete="off">
             </div>
 
-            <button class="add-button" type="button" name="submit" disabled="true">
+            <button class="add_instance__add-button" type="button" name="submit" disabled="true">
               Add
             </button>
 
