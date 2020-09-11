@@ -98,6 +98,12 @@ namespace OpenProject.WebViewIntegration
         // For some UI operations, revit should be focused
         RevitMainWindowHandler.SetFocusToRevit();
       }
+
+      // Hacky solution to directly send focus back to OP.
+      if (messageType == MessageTypes.VIEWPOINT_DATA)
+      {
+        OnAppForegroundRequestReceived?.Invoke(this);
+      }
     }
 
     public void SendMessageToOpenProject(string messageType, string trackingId, string messagePayload)
