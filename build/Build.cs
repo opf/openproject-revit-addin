@@ -40,7 +40,7 @@ class Build : NukeBuild
 
   [Solution] readonly Solution Solution;
   [GitRepository] readonly GitRepository GitRepository;
-  [GitVersion] readonly GitVersion GitVersion;
+  [GitVersion(Framework = "netcoreapp3.1")] readonly GitVersion GitVersion;
 
   AbsolutePath OutputDirectory => RootDirectory / "output";
 
@@ -149,8 +149,8 @@ namespace OpenProject.Shared
         DotNetBuild(s => s
               .SetProjectFile(Solution)
               .SetConfiguration(Configuration)
-              .SetAssemblyVersion(GitVersion.GetNormalizedAssemblyVersion())
-              .SetFileVersion(GitVersion.GetNormalizedFileVersion())
+              .SetAssemblyVersion(GitVersion.AssemblySemVer)
+              .SetFileVersion(GitVersion.AssemblySemFileVer)
               .SetInformationalVersion(GitVersion.InformationalVersion)
               .EnableNoRestore());
       });
@@ -177,8 +177,8 @@ namespace OpenProject.Shared
         DotNetPublish(c => c
           .SetProject(RootDirectory / "src" / "OpenProject.Windows" / "OpenProject.Windows.csproj")
           .SetConfiguration("Release x64")
-          .SetAssemblyVersion(GitVersion.GetNormalizedAssemblyVersion())
-          .SetFileVersion(GitVersion.GetNormalizedFileVersion())
+          .SetAssemblyVersion(GitVersion.AssemblySemVer)
+          .SetFileVersion(GitVersion.AssemblySemFileVer)
           .SetInformationalVersion(GitVersion.InformationalVersion)
           .SetOutput(OutputDirectory / "OpenProject.Windows")
           .SetSelfContained(true)
@@ -193,8 +193,8 @@ namespace OpenProject.Shared
 
         DotNetBuild(c => c
           .SetProjectFile(RootDirectory / "src" / "OpenProject.Revit" / "OpenProject.Revit.csproj")
-          .SetAssemblyVersion(GitVersion.GetNormalizedAssemblyVersion())
-          .SetFileVersion(GitVersion.GetNormalizedFileVersion())
+          .SetAssemblyVersion(GitVersion.AssemblySemVer)
+          .SetFileVersion(GitVersion.AssemblySemFileVer)
           .SetInformationalVersion(GitVersion.InformationalVersion)
           .CombineWith(cc => revitConfigurations
             .Select(config => cc
