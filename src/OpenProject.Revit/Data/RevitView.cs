@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using OpenProject.Shared.ViewModels.Bcf;
 using OpenProject.Shared;
+using OpenProject.Shared.ViewModels.Bcf;
+using System;
+using System.Linq;
 
 namespace OpenProject.Revit.Data
 {
@@ -119,7 +116,7 @@ namespace OpenProject.Revit.Data
           .WhereElementIsNotElementType()
           .WhereElementIsViewIndependent()
           .Where(x => x.IsHidden(doc.ActiveView)
-            || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate, x.Id)).Select(x=>x.Id)
+            || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate, x.Id)).Select(x => x.Id)
            ;//would need to check how much this is affecting performance
 
         var selectedElems = uidoc.Selection.GetElementIds();
@@ -162,7 +159,6 @@ namespace OpenProject.Revit.Data
         }
 
         return v;
-
       }
       catch (System.Exception ex1)
       {
@@ -170,6 +166,5 @@ namespace OpenProject.Revit.Data
       }
       return null;
     }
-
   }
 }
