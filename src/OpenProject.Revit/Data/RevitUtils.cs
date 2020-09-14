@@ -70,7 +70,7 @@ namespace OpenProject.Revit.Data
 
     public static XYZ GetRevitXYZ(Shared.ViewModels.Bcf.BcfPointOrVectorViewModel d)
     {
-      return new XYZ(d.X.ToInternalRevitUnit(),d.Y.ToInternalRevitUnit(),d.Z.ToInternalRevitUnit());
+      return new XYZ(d.X.ToInternalRevitUnit(), d.Y.ToInternalRevitUnit(), d.Z.ToInternalRevitUnit());
     }
 
     /// <summary>
