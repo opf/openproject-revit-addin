@@ -171,8 +171,8 @@ namespace OpenProject.Revit.Entry
             Parameter m_farClip = perspView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR);
             m_farClip.Set(0);
           }
-          perspView.CropBoxActive = true;
-          perspView.CropBoxVisible = true;
+          perspView.CropBoxActive = false;
+          perspView.CropBoxVisible = false;
 
           trans.Commit();
         }
