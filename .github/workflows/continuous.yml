@@ -18,6 +18,6 @@ jobs:
         with:
             certificate: '${{ secrets.CODE_SIGNING_CERT_BASE64 }}'
             password: '${{ secrets.CODE_SIGNING_CERT_PASSWORD }}'
-            certificatesha1: '${{ secrets.CODE_SIGNING_CERT_SHA1 }}'
+            certificatename: 'OpenProject GmbH'
             folder: 'output'
             recursive: true
