@@ -1,30 +1,61 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using System.Windows;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using OpenProject.Revit.Data;
+using OpenProject.Revit.Extensions;
 using OpenProject.Shared;
 using OpenProject.Shared.ViewModels.Bcf;
-using OpenProject.Revit.Extensions;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace OpenProject.Revit.Entry
 {
   /// <summary>
   /// Obfuscation Ignore for External Interface
   /// </summary>
-  public static class ExtEvntOpenView
+  public class ExtEvntOpenView : IExternalEventHandler
   {
+    /// <summary>
+    /// This is the method declared in the <see cref="IExternalEventHandler"/> interface
+    /// provided by the Revit API
+    /// </summary>
+    /// <param name="app"></param>
+    public void Execute(UIApplication app)
+    {
+      ShowBcfViewpointInternal(app);
+    }
+
+    public string GetName() => nameof(ExtEvntOpenView);
+
     private static int _viewSequence = 0;
+    private BcfViewpointViewModel _bcfViewpoint;
+
+    private static ExtEvntOpenView _instance;
+    private static ExtEvntOpenView Instance {
+      get
+      {
+        if (_instance == null)
+        {
+          _instance = new ExtEvntOpenView();
+          ExternalEvent = ExternalEvent.Create(_instance);
+        }
+
+        return _instance;
+      }
+    }
+    private static ExternalEvent ExternalEvent { get; set; }
 
     /// <summary>
     /// External Event Implementation
     /// </summary>
     /// <param name="app"></param>
-    public static void ShowBcfViewpoint(UIApplication app, BcfViewpointViewModel v)
+    public static void ShowBcfViewpoint(UIApplication app, BcfViewpointViewModel bcfViewpoint)
+    {
+      Instance._bcfViewpoint = bcfViewpoint;
+      ExternalEvent.Raise();
+    }
+
+    private void ShowBcfViewpointInternal(UIApplication app)
     {
       try
       {
@@ -32,14 +63,14 @@ namespace OpenProject.Revit.Entry
         Document doc = uidoc.Document;
 
         // IS ORTHOGONAL
-        if (v.OrthogonalCamera != null)
+        if (_bcfViewpoint.OrthogonalCamera != null)
         {
-          ShowOrthogonalView(v, doc, uidoc, app);
+          ShowOrthogonalView(_bcfViewpoint, doc, uidoc, app);
         }
         //perspective
-        else if (v.PerspectiveCamera != null)
+        else if (_bcfViewpoint.PerspectiveCamera != null)
         {
-          ShowPerspectiveView(v, doc, uidoc);
+          ShowPerspectiveView(_bcfViewpoint, doc, uidoc);
         }
         else
         {
@@ -47,7 +78,7 @@ namespace OpenProject.Revit.Entry
           return;
         }
 
-        ApplyElementStyles(v, doc, uidoc);
+        ApplyElementStyles(_bcfViewpoint, doc, uidoc);
 
         uidoc.RefreshActiveView();
       }
@@ -57,7 +88,7 @@ namespace OpenProject.Revit.Entry
       }
     }
 
-    private static void ShowOrthogonalView(BcfViewpointViewModel v, Document doc, UIDocument uidoc, UIApplication app)
+    private void ShowOrthogonalView(BcfViewpointViewModel v, Document doc, UIDocument uidoc, UIApplication app)
     {
       if (v.OrthogonalCamera == null)
         return;
@@ -69,9 +100,9 @@ namespace OpenProject.Revit.Entry
       var cameraUpVector = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.UpX,
         v.OrthogonalCamera.UpY,
         v.OrthogonalCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.ViewPointX.ToInternalRevitUnit(),
-        v.OrthogonalCamera.ViewPointY.ToInternalRevitUnit(),
-        v.OrthogonalCamera.ViewPointZ.ToInternalRevitUnit());
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.ViewPointX,
+        v.OrthogonalCamera.ViewPointY,
+        v.OrthogonalCamera.ViewPointZ);
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, true);
 
       View3D orthoView = null;
@@ -93,27 +124,23 @@ namespace OpenProject.Revit.Entry
       {
         if (trans.Start("Open orthogonal view") == TransactionStatus.Started)
         {
-          orthoView = View3D.CreateIsometric(doc, getFamilyViews(doc).First().Id);
-          orthoView.Name = $"BCFortho{_viewSequence++}";
+          if (orthoView == null)
+          {
+            orthoView = View3D.CreateIsometric(doc, getFamilyViews(doc).First().Id);
+            orthoView.Name = "BCFortho";
+          }
+          else
+          {
+            orthoView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+          }
           orthoView.SetOrientation(orient3D);
           trans.Commit();
         }
       }
+      uidoc.ActiveView = orthoView;
 
-      uidoc.RequestViewChange(orthoView);
-
-      double x = zoom;
-      app.ViewActivated += (s, e) =>
-       {
-         // Setting the zoom value happens after the actual view is displayed
-         if (e.CurrentActiveView.Id.IntegerValue == orthoView.Id.IntegerValue)
-         {
-           //set UI view position and zoom
-           XYZ m_xyzTl = uidoc.ActiveView.Origin.Add(uidoc.ActiveView.UpDirection.Multiply(x)).Subtract(uidoc.ActiveView.RightDirection.Multiply(x));
-           XYZ m_xyzBr = uidoc.ActiveView.Origin.Subtract(uidoc.ActiveView.UpDirection.Multiply(x)).Add(uidoc.ActiveView.RightDirection.Multiply(x));
-           uidoc.GetOpenUIViews().First().ZoomAndCenterRectangle(m_xyzTl, m_xyzBr);
-         }
-       };
+      var viewChangedZoomListener = new ActiveViewChangedZoomListener(orthoView.Id.IntegerValue, zoom, app);
+      viewChangedZoomListener.ListenForActiveViewChangeAndSetZoom();
     }
 
     private static void ShowPerspectiveView(BcfViewpointViewModel v, Document doc, UIDocument uidoc)
@@ -130,16 +157,16 @@ namespace OpenProject.Revit.Entry
       //double z = 18 / Math.Tan(25 / 2 * Math.PI / 180);
       //double factor = z1 - z;
 
-      var cameraDirection = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.DirectionX,
+      var cameraDirection = new XYZ(v.PerspectiveCamera.DirectionX,
         v.PerspectiveCamera.DirectionY,
         v.PerspectiveCamera.DirectionZ);
-      var cameraUpVector = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.UpX,
+      var cameraUpVector = new XYZ(v.PerspectiveCamera.UpX,
         v.PerspectiveCamera.UpY,
         v.PerspectiveCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.ViewPointX,
-        v.PerspectiveCamera.ViewPointY,
-        v.PerspectiveCamera.ViewPointZ);
-      var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, true);
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.ViewPointX.ToInternalRevitUnit(),
+        v.PerspectiveCamera.ViewPointY.ToInternalRevitUnit(),
+        v.PerspectiveCamera.ViewPointZ.ToInternalRevitUnit());
+      var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, false);
 
       View3D perspView = null;
       //try to use an existing 3D view
@@ -257,7 +284,6 @@ namespace OpenProject.Revit.Entry
              //Get the view with the given Id or given name
              where view.Id == eid | view.Name == stname
              select view;
-      
     }
   }
 }

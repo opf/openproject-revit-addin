@@ -70,11 +70,11 @@ namespace OpenProject.Revit.Data
 
     public static XYZ GetRevitXYZ(Shared.ViewModels.Bcf.BcfPointOrVectorViewModel d)
     {
-      return new XYZ(d.X.ToInternalRevitUnit(),d.Y.ToInternalRevitUnit(),d.Z.ToInternalRevitUnit());
+      return new XYZ(d.X.ToInternalRevitUnit(), d.Y.ToInternalRevitUnit(), d.Z.ToInternalRevitUnit());
     }
 
     /// <summary>
-    /// Converts feet units to meters
+    /// Converts feet units to meters. Feet are the internal Revit units.
     /// </summary>
     /// <param name="internalUnits">Value in internal Revit units to be converted to meters</param>
     /// <returns></returns>
@@ -87,7 +87,7 @@ namespace OpenProject.Revit.Data
 #endif
     }
     /// <summary>
-    /// Converts meters units to feet
+    /// Converts meters units to feet. Feet are the internal Revit units.
     /// </summary>
     /// <param name="meters">Value in feet to be converted to feet</param>
     /// <returns></returns>
