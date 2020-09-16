@@ -13,3 +13,11 @@ jobs:
         run: ./build.cmd PublishGitHubRelease
         env:
             GitHubAuthenticationToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Code signing
+        uses: DanaBear/code-sign-action@v4
+        with:
+            certificate: '${{ secrets.CODE_SIGNING_CERT_BASE64 }}'
+            password: '${{ secrets.CODE_SIGNING_CERT_PASSWORD }}'
+            certificatesha1: '${{ secrets.CODE_SIGNING_CERT_SHA1 }}'
+            folder: 'output'
+            recursive: true
