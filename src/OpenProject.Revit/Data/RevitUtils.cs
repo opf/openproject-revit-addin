@@ -22,10 +22,10 @@ namespace OpenProject.Revit.Data
       double y = 0;
       double z = 0;
 
-      //VERY IMPORTANT
-      //BuiltInParameter.BASEPOINT_EASTWEST_PARAM is the value of the BASE POINT LOCATION
-      //position is the location of the BPL related to Revit's absolute origin
-      //if BPL is set to 0,0,0 not always it corresponds to Revit's origin
+      // VERY IMPORTANT
+      // `BuiltInParameter.BASEPOINT_EASTWEST_PARAM` is the value of the BASE POINT LOCATION.
+      // `position` is the location of the BPL related to Revit's absolute origin.
+      // If BPL is set to 0,0,0 not always it corresponds to Revit's origin.
 
       XYZ origin = new XYZ(0, 0, 0);
 
