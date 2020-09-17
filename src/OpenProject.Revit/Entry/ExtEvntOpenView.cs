@@ -157,15 +157,15 @@ namespace OpenProject.Revit.Entry
       //double z = 18 / Math.Tan(25 / 2 * Math.PI / 180);
       //double factor = z1 - z;
 
-      var cameraDirection = new XYZ(v.PerspectiveCamera.DirectionX,
+      var cameraDirection = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.DirectionX,
         v.PerspectiveCamera.DirectionY,
         v.PerspectiveCamera.DirectionZ);
-      var cameraUpVector = new XYZ(v.PerspectiveCamera.UpX,
+      var cameraUpVector = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.UpX,
         v.PerspectiveCamera.UpY,
         v.PerspectiveCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.ViewPointX.ToInternalRevitUnit(),
-        v.PerspectiveCamera.ViewPointY.ToInternalRevitUnit(),
-        v.PerspectiveCamera.ViewPointZ.ToInternalRevitUnit());
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.ViewPointX,
+        v.PerspectiveCamera.ViewPointY,
+        v.PerspectiveCamera.ViewPointZ);
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, false);
 
       View3D perspView = null;
