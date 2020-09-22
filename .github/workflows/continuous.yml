@@ -1,0 +1,35 @@
+name: continuous
+
+on: [push]
+
+jobs:
+  windows-latest:
+    name: windows-latest
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+      - name: Run './build.cmd CompileReleaseConfigurations'
+        run: ./build.cmd CompileReleaseConfigurations
+      - name: Code signing
+        uses: DanaBear/code-sign-action@v4
+        with:
+            certificate: '${{ secrets.CODE_SIGNING_CERT_BASE64 }}'
+            password: '${{ secrets.CODE_SIGNING_CERT_PASSWORD }}'
+            certificatename: 'OpenProject GmbH'
+            folder: 'output'
+            recursive: true
+      - name: Run './build.cmd CreateSetup --skip'
+        run: ./build.cmd CreateSetup --skip
+      - name: Code signing installer
+        uses: DanaBear/code-sign-action@v4
+        with:
+            certificate: '${{ secrets.CODE_SIGNING_CERT_BASE64 }}'
+            password: '${{ secrets.CODE_SIGNING_CERT_PASSWORD }}'
+            certificatename: 'OpenProject GmbH'
+            folder: 'output'
+            recursive: true
+      - name: Run './build.cmd PublishGitHubRelease --skip'
+        run: ./build.cmd PublishGitHubRelease --skip
+        env:
+            GitHubAuthenticationToken: ${{ secrets.GITHUB_TOKEN }}

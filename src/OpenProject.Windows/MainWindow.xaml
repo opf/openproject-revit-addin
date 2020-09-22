@@ -1,0 +1,19 @@
+﻿<Window
+  x:Class="OpenProject.Windows.MainWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:ctr="clr-namespace:OpenProject.UserControls;assembly=OpenProject"
+  xmlns:data="clr-namespace:OpenProject.Data;assembly=OpenProject"
+  Name="mainWin"
+  Title="OpenProject Revit Add-in"
+  Closing="Window_Closing"
+  Icon="Assets/openproject.ico"
+  Loaded="MainWindow_OnLoaded"
+  WindowStartupLocation="Manual">
+  <Grid>
+    <ctr:BcfierPanel
+      Name="Bcfier"
+      HorizontalAlignment="Stretch"
+      HorizontalContentAlignment="Stretch" />
+  </Grid>
+</Window>

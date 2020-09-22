@@ -1,0 +1,13 @@
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatch
+
+
+branches:
+  master:
+    regex: (origin/)?(master|main)$
+  develop:
+    increment: Patch
+    tag: beta
+    regex: (origin/)?dev(elop)?(ment)?$
+  feature:
+    increment: Inherit
