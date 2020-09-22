@@ -30,30 +30,30 @@ namespace OpenProject.UserControls
       _browserManager = new BrowserManager(Browser);
 
       // TODO this is for quick testing to ensure a 'loaded' event is sent to OpenProject at the start
-      var hasSentTestMessage = false;
-      Browser.LoadingStateChanged += (s, e) =>
-      {
-        if (!e.IsLoading)
-        {
-          if (hasSentTestMessage)
-          {
-            return;
-          }
-
-          hasSentTestMessage = true;
-          var myTimer = new System.Timers.Timer(1000);
-          myTimer.Elapsed += (s2, e2) =>
-          {
-            JavaScriptBridge.Instance
-            .SendMessageToOpenProject(MessageTypes.REVIT_LOADED, string.Empty, JsonConvert.SerializeObject(new
-            {
-              Title = "Demo.ifc"
-            }));
-            myTimer.Stop();
-          };
-          myTimer.Start();
-        }
-      };
+      // var hassenttestmessage = false;
+      // browser.loadingstatechanged += (s, e) =>
+      // {
+      //   if (!e.isloading)
+      //   {
+      //     if (hassenttestmessage)
+      //     {
+      //       return;
+      //     }
+      // 
+      //     hassenttestmessage = true;
+      //     var mytimer = new system.timers.timer(1000);
+      //     mytimer.elapsed += (s2, e2) =>
+      //     {
+      //       javascriptbridge.instance
+      //       .sendmessagetoopenproject(messagetypes.revit_loaded, string.empty, jsonconvert.serializeobject(new
+      //       {
+      //         title = "demo.ifc"
+      //       }));
+      //       mytimer.stop();
+      //     };
+      //     mytimer.start();
+      //   }
+      // };
 
       var commandLineArgs = Environment.GetCommandLineArgs();
       if (commandLineArgs?.Any(arg => arg == "ipc") ?? false)
