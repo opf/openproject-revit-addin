@@ -240,7 +240,9 @@ namespace OpenProject.Revit.Entry
 
         if (v.Components.Any(c => c.IsSelected && c.IfcGuid == guid))
         {
+          // Selection always means showing a component, too
           elementsToShow.Add(e);
+          elementsToSelect.Add(e);
         }
       }
 

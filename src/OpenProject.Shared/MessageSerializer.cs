@@ -101,6 +101,39 @@ namespace OpenProject.Shared
           Default_visibility = true
         };
 
+        var visibleComponents = bcfViewpointViewModel.Components.Where(c => c.IsVisible).ToList();
+        var hiddenComponents = bcfViewpointViewModel.Components.Where(c => !c.IsVisible).ToList();
+        if (visibleComponents.Count > hiddenComponents.Count)
+        {
+          apiViewpoint.Components.Visibility.Default_visibility = true;
+          if (hiddenComponents.Any())
+          {
+            apiViewpoint.Components.Visibility.Exceptions = hiddenComponents
+              .Select(hc => new iabi.BCF.APIObjects.V21.Component
+              {
+                Authoring_tool_id = hc.AuthoringToolId,
+                Ifc_guid = hc.IfcGuid,
+                Originating_system = hc.OriginatingSystem
+              })
+              .ToList();
+          }
+        }
+        else if (hiddenComponents.Count > visibleComponents.Count)
+        {
+          apiViewpoint.Components.Visibility.Default_visibility = false;
+          if (visibleComponents.Any())
+          {
+            apiViewpoint.Components.Visibility.Exceptions = visibleComponents
+                .Select(vc => new iabi.BCF.APIObjects.V21.Component
+                {
+                  Authoring_tool_id = vc.AuthoringToolId,
+                  Ifc_guid = vc.IfcGuid,
+                  Originating_system = vc.OriginatingSystem
+                })
+                .ToList();
+          }
+        }
+
         foreach (var component in bcfViewpointViewModel.Components)
         {
           if (component.Color != null)

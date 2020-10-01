@@ -20,9 +20,13 @@ namespace OpenProject.Shared
 
       var bcfApiViewpoint = new ViewpointApiMessage
       {
-        Viewpoint = deserializedJson.ToObject<Viewpoint_GET>(),
-        Components = deserializedJson.ToObject<Components>()
+        Viewpoint = deserializedJson.ToObject<Viewpoint_GET>()
       };
+
+      if (deserializedJson["components"] != null)
+      {
+        bcfApiViewpoint.Components = deserializedJson["components"].ToObject<Components>();
+      }
 
       var bcfViewpoint = new BcfViewpointViewModel
       {
