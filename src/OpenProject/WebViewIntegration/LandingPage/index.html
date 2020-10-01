@@ -1,0 +1,730 @@
+﻿<!DOCTYPE html>
+<html lang="en-US" dir="ltr" class="wf-lato-n3-active wf-lato-n4-active wf-active">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>OpenProject Revit Integration</title>
+    <meta name="description" content="Revit pluging of OpenProject, Web-based open source project management software to support teams along the entire project management life-cycle: task management✓ Gantt charts✓ agile boards✓ team collaboration✓ bug tracking✓ roadmap✓ time and cost reporting✓ FREE trial!">
+    <link rel="stylesheet" href="./assets/main.css">
+    <link href="./assets/font-awesome-css/all.css" rel="stylesheet">
+    <style>
+      :root {
+        --blue: #007bff;
+        --indigo: #6610f2;
+        --purple: #6f42c1;
+        --pink: #e83e8c;
+        --red: #dc3545;
+        --orange: #fd7e14;
+        --yellow: #ffc107;
+        --green: #28a745;
+        --teal: #20c997;
+        --cyan: #17a2b8;
+        --white: #fff;
+        --gray: #6c757d;
+        --gray-dark: #343a40;
+        --primary: #007bff;
+        --secondary: #6c757d;
+        --success: #28a745;
+        --info: #17a2b8;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --light: #f8f9fa;
+        --dark: #343a40;
+        --header-bg-color: #05002C;
+        --breakpoint-xs: 0;
+        --breakpoint-sm: 576px;
+        --breakpoint-md: 768px;
+        --breakpoint-lg: 992px;
+        --breakpoint-xl: 1200px;
+        --font-family-sans-serif: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+        --font-family-monospace: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      }
+
+      body {
+        background-color: #b4b4b44d;
+      }
+
+      .header {
+        line-height: 1.5;
+        text-align: left;
+        font-family: Lato,Helvetica,Arial,sans-serif;
+        font-weight: 300;
+        color: #333;
+        font-size: 16px;
+        box-sizing: border-box;
+        display: flex;
+        flex-wrap: wrap;
+        -webkit-box-align: center;
+        align-items: center;
+        -webkit-box-pack: justify;
+        justify-content: space-between;
+        top: 0;
+        position: fixed;
+        right: 0;
+        left: 0;
+        z-index: 1030;
+        padding: 0;
+        height: 55px;
+        background-color: var(--header-bg-color);
+        transition: background-color .3s;
+      }
+
+      .logo__container {
+        display: flex;
+        place-content: center center;
+        width: 100%;
+      }
+      
+      .landing_page_container, .settings_container {
+        margin: 125px auto 0 auto;
+        max-width: 800px;
+        background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(244,244,244,1) 71%);
+      }
+
+      .landing_page_container {
+        padding: 80px 40px 40px 40px;
+      }
+
+      .settings_container {
+        padding: 60px 20px 0 20px;
+      }
+
+      .form__container {
+        line-height: 1.5;
+        text-align: left;
+        font-family: Lato,Helvetica,Arial,sans-serif;
+        font-weight: 300;
+        color: #333;
+        font-size: 16px;
+        box-sizing: border-box;
+        margin-top: 40px;
+        margin-bottom: 60px;
+        display: flex;
+        place-content: center center;
+      }
+
+      .form__wrapper {
+        line-height: 1.5;
+        text-align: left;
+        font-family: Lato,Helvetica,Arial,sans-serif;
+        font-weight: 300;
+        color: #333;
+        font-size: 16px;
+        box-sizing: border-box;
+        display: flex;
+        place-content: center center;
+        margin-bottom: 2rem;
+      }
+
+      .form__wrapper.instance_name_input {
+        margin-bottom: 0.5rem;
+      }
+
+      .input__wrapper input {
+        background-color: #fff;
+        width: 350px;
+        height: 100%;
+        border: none;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        padding-left: 15px;
+        text-align: left;
+        font-family: Lato,Helvetica,Arial,sans-serif;
+        font-weight: 300;
+        color: #333;
+        box-shadow: none;
+        border: 1px solid lightgrey;
+        border-right: 0px;
+        border-radius: 2px 0 2px 0;
+      }
+
+      .previous_instances__list_container {
+        max-width: 550px;
+        margin: 0 auto;
+      }
+
+      .list__block {
+        padding: 10px 0;
+        border-bottom: 1px solid #e7e7e7;
+      }
+
+      .list__block:nth-child(1) {
+        border-top: 1px solid #e7e7e7;
+      }
+
+      .list_item__wrapper {
+        display: flex;
+        place-content: center center;
+      }
+
+      .list_item__wrapper p {
+        width: 400px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .list_item__wrapper, .list_item__wrapper .go-button {
+        height: 35px;
+      }
+
+      #submit-button, .go-button, .add_instance__add-button {
+        margin: 0;
+        line-height: inherit;
+        overflow: visible;
+        text-transform: none;
+        cursor: pointer;
+        font-family: Lato,Helvetica,Arial,sans-serif;
+        -webkit-appearance: button;
+        height: 50px;
+        width: 100px;
+        box-sizing: border-box;
+        border-radius: 0 2px 2px 0;
+        color: #fff;
+        margin-bottom: 0;
+        text-align: center;
+        font-size: 15px;
+        padding: 0;
+        border: 1px solid #35c53f;
+        transition: background-color .5s,border-color .5s;
+        background-color: #35C546;
+      }
+
+      #submit-button:hover, .go-button:hover {
+        background-color: #2da936;
+      }
+
+      input:focus, button:focus {
+        outline: none;
+      }
+
+      input:disabled {
+        background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(244,244,244,1) 71%);
+        cursor:not-allowed;
+      }
+
+      #submit-button:disabled, .add_instance__add-button:disabled {
+        border: 1px solid lightgrey;
+        background-color: lightgrey;
+        cursor:not-allowed;
+      }
+
+      .claim__container, .previous_instances_title {
+        display: flex;
+        place-content: center center;
+        text-align: center;
+      }
+
+      .plugin_version {
+        display: flex;
+        place-content: center center;
+        text-align: center;
+      }
+
+      .previous_instances_title {
+        display: none;
+      }
+
+      .delete-button, .list_item__wrapper .go-button {
+        margin-left: 1rem;
+        background: #f8f8f8;
+        border: 1px solid #dddddd;
+        flex: 0 0 45px;
+        color: var(--black);
+        transition: background-color .5s;
+        border-radius: 2px;
+      }
+
+      .delete-button:hover, .list_item__wrapper .go-button:hover {
+        background-color: #e2e2e2;
+      }
+
+      .signup {
+        width: 450px;
+      }
+
+      .signup p {
+        font-size: 16px;
+        margin-bottom: 5px;
+        line-height: 20px;
+      }
+
+      .add_instance input {
+        width: 400px;
+      }
+
+      .add_instance__open {
+        width: 120px;
+        overflow: hidden;        
+      }
+
+      .add_instance__open i {
+        margin-right: 7px;
+      }
+
+      .add_instance__open, .add_instance__close {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        color: var(--primary) !important;
+        cursor: pointer;
+      }
+
+      .add_instance__open span, .add_instance__close span {
+        font-size: 21px;
+        font-weight: bolder;
+      }
+
+      .add_instance__input_container {
+        opacity: 0;
+        transition: all 0.3s;
+        margin-bottom: 5px;
+      }
+
+      .add_instance__close {
+        opacity: 0;
+        margin-left: 15px;
+        margin-top: 12px;
+      }
+
+      .add_instance__close i:before {
+        color: lightgrey;
+      }
+
+      .landing_page_container, .settings_container {
+        position: absolute;
+        z-index: -99;
+        opacity: 0;
+        transition: all 0.3s;
+      }
+
+      .brand img {
+        width: 210px;
+      }
+    </style>
+    
+    <script type="text/javascript">
+      let instanceInput;
+      let errorContainer;
+      let previousInstancesList;
+      let addInstanceButton;
+      let previousListTitle;
+      let landingPageContainer;
+      let settingsContainer;
+      let allInstances;
+
+      function debounce(func, wait) {
+        let timeout;
+
+        return function executedFunction(...args) {
+          const later = () => {
+            timeout = null;
+            func(...args);
+          };
+
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      };
+
+      function validateHttpUrl(string) {
+        let url;
+
+        try {
+          url = new URL(string);
+        } catch (_) {
+          return false;  
+        }
+
+        return url.protocol === "http:" || url.protocol === "https:";
+      }
+
+      function validateInstanceUrl() {
+        const instanceUrl = instanceInput.value;
+        const domains = ['.openproject.com', '.openproject-edge.com', '.openproject-stage.com'];
+        const isSAASDomain = domains.some(domain => instanceUrl.includes(domain));
+        const isValidHttpUrl = validateHttpUrl(instanceUrl);
+        const isAlreadyOnTheList = allInstances && allInstances.includes(instanceUrl);
+
+        if (isAlreadyOnTheList) {
+          showErrorMessage("<span>The URL is already included on this list</span>");
+          addInstanceButton.disabled = true;
+          return;
+        }
+
+        // If the url belongs to an OP SAAS instance
+        // test it against the SAAS API (/instance)
+        if (isSAASDomain && isValidHttpUrl) {
+          if (!instanceUrl.includes('https')) {
+            showErrorMessage("<span>OpenProject URLs must start with 'https'</span>");
+            addInstanceButton.disabled = true;
+            return;
+          }
+
+          let regex = /(?:http[s]*\:\/\/)*(.*?)\.(?=[^\/]*\..{2,5})/i;
+          const instanceName = instanceUrl.match(regex)[1];
+          
+          // TODO: Change this domain to openproject.com (prod)
+          // TODO: Change the Origin header to one of this:
+          // SETTINGS_CORS__ACCEPTED__DOMAINS=https://((www.)?openproject.(com|org))|(openprojectpr.staging.wpengine.com)|(opdev.staging.wpengine.com)|(opdev.wpengine.com)
+          // Or create a new one an add to the endpoint SETTINGS_CORS__ACCEPTED__DOMAINS
+          fetch('https://start.openproject-edge.com/instance',
+            {
+              method: 'POST',
+              body: JSON.stringify({"instance_name": instanceName}),
+              headers:{
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              }
+            }
+          )
+          .then(response => {
+            if (response.ok) {
+              showErrorMessage("<span>This URL doesn't belongs to an OpenProject instance</span>");
+              addInstanceButton.disabled = true;
+            } else {
+              errorContainer.style.display = 'none';
+              addInstanceButton.disabled = false;              
+            }
+          })
+          .catch(error => {
+            showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
+            addInstanceButton.disabled = true;
+          })        
+        } else if (!isValidHttpUrl) {
+          showErrorMessage("<span>The URL is not valid</span>");
+          addInstanceButton.disabled = true;
+        } else {
+          errorContainer.style.display = 'none';
+          addInstanceButton.disabled = false;
+        }
+      }
+
+      const debouncedValidateInstanceUrl = debounce(validateInstanceUrl, 700);
+
+      function handleSubmit(event) {
+        if (event) {
+          event.preventDefault();
+        }
+
+        if (addInstanceButton.disabled) {
+          return false; 
+        }
+
+        const selectedInstance = instanceInput.value;
+
+        if (selectedInstance) {
+          window.RevitBridge.sendMessageToRevit('InstanceSelected', '0', selectedInstance);
+        } else {
+          showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
+        }
+      }
+
+      function showErrorMessage(message) {
+        errorContainer.innerHTML = message;
+        errorContainer.style.display = 'block';
+      };
+
+      function removeInstance(instanceUrl) {
+        window.RevitBridge.sendMessageToRevit('RemoveInstance', '0', instanceUrl);
+        allInstances = allInstances.filter(instance => instance !== instanceUrl);
+        renderPreviousInstancesList(allInstances);
+      }
+
+      function showElement(element) {
+        element.style.display = 'block';
+        element.style.position = 'relative';
+        element.style.opacity = '1';
+        element.style.zIndex = 0;
+      }
+
+      function renderPreviousInstancesList(allInstances) {
+        // Empty list
+        previousInstancesList.innerHTML = '';
+
+        allInstances.forEach((instance, index) => {
+          // Create the list of the last used instance urls
+          const templateClone = document.querySelector('#listItemTemplate').content.cloneNode(true);
+          const listItem = templateClone.querySelector('.list_item__wrapper');
+          const url = document.createElement('div');
+          const goButton = templateClone.querySelector('.go-button');
+          const deleteButton = templateClone.querySelector('.delete-button');
+
+          goButton.dataset.instance = instance;
+          deleteButton.dataset.instance = instance;
+
+          goButton.addEventListener('click', event => {
+            window.RevitBridge.sendMessageToRevit('InstanceSelected', '0', event.target.dataset.instance);
+          });
+
+          deleteButton.addEventListener('click', event => {
+            const instanceToRemove = event.target.dataset.instance || event.target.parentElement.dataset.instance;
+
+            removeInstance(instanceToRemove);
+          });
+
+          url.innerHTML = `<p>${instance}</p>`;
+          listItem.insertBefore(url, goButton);
+
+          previousInstancesList.appendChild(templateClone);
+        });
+      }
+
+      function setUpInstancesList() {
+        const addInstanceButtonContainer = document.querySelector('.add_instance__open');
+        const addInstanceInput = document.querySelector('.add_instance__input');
+        const addInstanceInputContainer = document.querySelector('.add_instance__input_container');
+        const closeAddInstanceButton = document.querySelector('.add_instance__close');
+
+        addInstanceButton = addInstanceInputContainer.querySelector('.add_instance__add-button');
+        addInstanceButton.disabled = true;
+
+        const hideAddInstanceBox = () => {
+          addInstanceInputContainer.style.opacity = '0';
+          closeAddInstanceButton.style.opacity = '0';
+          addInstanceButtonContainer.style.height = 'auto';
+          addInstanceInput.value = '';
+          addInstanceButton.disabled = true;
+          errorContainer.style.display = 'none';
+        }
+
+        const addInstance = () => {
+          const selectedInstance = addInstanceInput.value;
+          allInstances = [...allInstances, selectedInstance];
+
+          window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
+          renderPreviousInstancesList(allInstances);
+        }
+
+        const addInstanceAndHideInstanceBox = () => {          
+          addInstance();
+          hideAddInstanceBox();
+        }
+
+        if (allInstances.length > 0) {
+          previousListTitle.style.display = 'flex';
+
+          addInstanceButtonContainer.addEventListener('click', event => {
+            addInstanceInputContainer.style.opacity == false ?
+              addInstanceInputContainer.style.opacity = '1' :
+              addInstanceInputContainer.style.opacity = '0';
+
+            addInstanceInput.focus();
+
+            addInstanceButtonContainer.style.height = '0';
+            closeAddInstanceButton.style.opacity = '1';
+          });
+
+          addInstanceButton.addEventListener('click', event => {
+            addInstanceAndHideInstanceBox();
+          });
+          
+          // Handle Enter key on input
+          addInstanceInput.addEventListener("keyup", function(event) {
+            if (event.keyCode === 13) {
+              event.preventDefault();
+
+              if (addInstanceButton.disabled) {
+                return false;
+              }
+
+              addInstanceAndHideInstanceBox();
+            }
+          });
+
+          closeAddInstanceButton.addEventListener('click', event => {
+            hideAddInstanceBox();
+          });
+        }
+
+        renderPreviousInstancesList(allInstances);
+      }
+      
+      function setupPage(page) {
+        if (page === 'landing') {
+          showElement(landingPageContainer);
+          errorContainer = document.querySelector('.landing-error');
+          instanceInput = document.getElementById('instance_name_input');
+          addInstanceButton = document.getElementById('submit-button');
+          addInstanceButton.disabled = true;
+          addInstanceButton.addEventListener('click', handleSubmit);
+
+          if (navigator.onLine) {
+            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
+          }
+        } else {
+          showElement(settingsContainer);
+          errorContainer = document.querySelector('.settings-error');
+          instanceInput = document.querySelector('.add_instance__input');
+
+          setUpInstancesList();
+
+          if (navigator.onLine) {
+            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
+          }
+        }
+      }
+      
+      // Setup the sendMessageToOpenProject function that will be
+      // called by the Revit plugin to communicate with this web
+      function setupRevitCommunicationChannel() {
+        if (window.RevitBridge) {
+          const previousCallback = window.RevitBridge.sendMessageToOpenProject;
+
+          window.RevitBridge.sendMessageToOpenProject = function (messageData) {
+            const message = JSON.parse(messageData);
+
+            if (message.messagePayload && message.messagePayload.length) {
+              message.messagePayload = JSON.parse(message.messagePayload);
+            }
+
+            if (message.messageType === 'AllInstances') {
+              // Show settings if there are previous instances
+              if (Array.isArray(message.messagePayload) &&
+                  message.messagePayload.length) {
+                allInstances = message.messagePayload;
+                setupPage('settings');
+              // Show landing page if there are no previous instances                
+              } else {
+                setupPage('landing');
+              }
+            }
+
+            if (previousCallback) {
+              previousCallback(messageData);
+            }
+          };
+
+          window.RevitBridge.sendMessageToRevit('RequestAllInstances', '0', '');
+        } else {
+          // Need to wait for Revit to be initialized
+          setTimeout(setupRevitCommunicationChannel, 500);
+        }
+      }
+      
+      // Setup when the DOM is ready
+      document.addEventListener("DOMContentLoaded", function () {
+        errorContainer = document.getElementById('instance-error-message');
+        previousInstancesList = document.querySelector('.previous_instances__list');
+        previousListTitle = document.querySelector('.previous_instances_title');
+        landingPageContainer = document.querySelector('.landing_page_container');
+        settingsContainer = document.querySelector('.settings_container');
+
+        setupRevitCommunicationChannel();
+      });
+    </script>
+  </head>
+
+  <body>
+    <header class="header">
+      <div class="logo__container">
+        <a class="brand" href="https://www.openproject.org/">
+          <img src="./assets/logo_openproject_bim_big.png" title="OpenProject.org">
+        </a>
+      </div>
+    </header>
+
+    <div class="landing_page_container" role="document">
+      <div class="claim__container">
+        <h1>Enter the web address of your OpenProject</h1>        
+      </div>
+
+      <div class="form__container">
+        <form id="new_instance_form_wp_site" onsubmit="handleSubmit(event)">
+          <div class="form__wrapper instance_name_input">
+            <div class="input__wrapper">
+              <input type="text"
+                     name="company"
+                     id="instance_name_input"
+                     placeholder="https://example.openproject.com">
+            </div>
+
+            <button id="submit-button" type="button" name="submit" disabled="true">
+              Go
+            </button>
+          </div>
+          
+          <div class="alert alert-danger validation-error landing-error" id="instance-error-message" style="display:none;" role="alert">
+          </div>
+
+          <div class="signup">
+            <p>
+              Don’t you have an OpenProject instance yet? Get one in our Cloud
+              <a href="https://start.openproject.com/go/bim" target="_blank">
+                here
+              </a>
+            </p>
+
+            <p>
+              Don’t you remember your organization's name in the OpenProject Cloud? Find it 
+              <a href="https://www.openproject.org/request-organization" target="_blank">
+                here
+              </a>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="settings_container">
+      <div class="previous_instances_title">
+        <p><strong>Your OpenProject instances</strong></p>
+      </div>
+
+      <div class="previous_instances__list_container">
+        <div class="previous_instances__list"></div>
+
+        <div class="add_instance">
+          <div class="add_instance__wrapper">
+            <p class="add_instance__open">
+              <i class="fas fa-plus"></i>
+
+              Add URL
+            </p>
+          </div>
+
+          <div class="form__wrapper add_instance__input_container">
+            <div class="input__wrapper">
+              <input type="text"
+                    name="company"
+                    class="add_instance__input"
+                    placeholder="https://example.openproject.com"
+                    autocomplete="off">
+            </div>
+
+            <button class="add_instance__add-button" type="button" name="submit" disabled="true">
+              Add
+            </button>
+
+            <div class="add_instance__close">
+              <i class="fas fa-times"></i>
+            </div>
+          </div>
+
+          <div class="alert alert-danger validation-error settings-error" id="instance-error-message" style="display:none;"
+            role="alert">
+          </div>
+        </div>
+      </div>
+        <div class="plugin_version">
+            <p>
+                Plugin Version: @@PLUGIN_VERSION@@
+            </p>
+        </div>
+    </div>
+
+    <template id="listItemTemplate">
+      <div class="list__block">
+        <div class="list_item__wrapper">        
+          <button class="go-button" type="button" name="submit">
+            Go
+          </button>
+        
+          <button class="delete-button" type="button" name="submit">
+            <i class="far fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>        
+    </template>
+  </body>
+</html>
