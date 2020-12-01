@@ -32,7 +32,7 @@ class Build : NukeBuild
   public static int Main() => Execute<Build>(x => x.PublishGitHubRelease);
 
   [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
-  readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
+  readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
   [Parameter] readonly string GitHubAuthenticationToken;
 
