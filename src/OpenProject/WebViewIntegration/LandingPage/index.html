@@ -380,7 +380,7 @@
           )
           .then(response => {
             if (response.ok) {
-              showErrorMessage("<span>This URL doesn't belongs to an OpenProject instance</span>");
+              showErrorMessage("<span>This URL doesn't belong to an OpenProject instance</span>");
               addInstanceButton.disabled = true;
             } else {
               errorContainer.style.display = 'none';
