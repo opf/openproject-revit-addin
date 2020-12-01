@@ -77,6 +77,11 @@ class Build : NukeBuild
     .DependsOn(Clean)
     .Executes(() =>
     {
+      if (!DirectoryExists(OutputDirectory))
+      {
+        Directory.CreateDirectory(OutputDirectory);
+      }
+
       var landingPageFolder = RootDirectory / "src" / "OpenProject" / "WebViewIntegration" / "LandingPage";
       var landingPageIndexPath = landingPageFolder / "index.html";
       var originalLandingPageIndexContent = ReadAllText(landingPageIndexPath);
