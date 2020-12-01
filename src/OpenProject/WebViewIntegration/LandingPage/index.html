@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-US" dir="ltr" class="wf-lato-n3-active wf-lato-n4-active wf-active">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -312,6 +312,7 @@
       let landingPageContainer;
       let settingsContainer;
       let allInstances;
+      let lastValidationCounter = 0;
 
       function debounce(func, wait) {
         let timeout;
@@ -363,34 +364,62 @@
 
           let regex = /(?:http[s]*\:\/\/)*(.*?)\.(?=[^\/]*\..{2,5})/i;
           const instanceName = instanceUrl.match(regex)[1];
-          
-          // TODO: Change this domain to openproject.com (prod)
+
           // TODO: Change the Origin header to one of this:
           // SETTINGS_CORS__ACCEPTED__DOMAINS=https://((www.)?openproject.(com|org))|(openprojectpr.staging.wpengine.com)|(opdev.staging.wpengine.com)|(opdev.wpengine.com)
           // Or create a new one an add to the endpoint SETTINGS_CORS__ACCEPTED__DOMAINS
-          fetch('https://start.openproject-edge.com/instance',
-            {
-              method: 'POST',
-              body: JSON.stringify({"instance_name": instanceName}),
-              headers:{
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              }
-            }
-          )
-          .then(response => {
-            if (response.ok) {
-              showErrorMessage("<span>This URL doesn't belong to an OpenProject instance</span>");
-              addInstanceButton.disabled = true;
-            } else {
-              errorContainer.style.display = 'none';
-              addInstanceButton.disabled = false;              
-            }
-          })
-          .catch(error => {
-            showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
-            addInstanceButton.disabled = true;
-          })        
+
+          let hasFoundValidInstanceAlready = false;
+          let errorCount = 0;
+          // This counter is used to ensure that we're running the latest validation
+          // We should not update the UI with validation messages if the url was changed
+          const currentCounter = ++lastValidationCounter;
+
+          const validateInstance = (instanceBaseUrl) => {
+              return fetch(`${instanceBaseUrl}/instance`, {
+                  method: 'POST',
+                  body: JSON.stringify({ "instance_name": instanceName }),
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                  }
+              })
+              .then(response => {
+                  if (currentCounter === lastValidationCounter) {
+                      // We can short circuit if we're getting a valid response
+                      if (!response.ok && response.status === 400) {
+                          // OpenProject returns status code 400 if the instance exists (meaning it can not be created)
+                          // We're using this to detect if it's a valid OpenProject instance
+                          hasFoundValidInstanceAlready = true;
+                          addInstanceButton.disabled = false;
+                          errorContainer.style.display = 'none';
+                      }
+                  }
+              })
+              .catch(error => {
+                  errorCount++;
+              });
+          };
+
+        const instanceUrls = domains.map(domain => `https://start${domain}`);
+        const instanceValidations = instanceUrls.map(instanceUrl => validateInstance(instanceUrl));
+
+        Promise.all(instanceValidations).then(() => {
+                if (currentCounter === lastValidationCounter) {
+                    if (!hasFoundValidInstanceAlready && errorCount === domains.length) {
+                        showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
+                        addInstanceButton.disabled = true;
+                    } else if (!hasFoundValidInstanceAlready) {
+                        // Error count less than the domains requested means there were some responses,
+                        // but the instance url did not exist
+                        showErrorMessage("<span>This URL doesn't belong to an OpenProject instance</span>");
+                        addInstanceButton.disabled = true;
+                    }
+                }
+            })
+            .catch(errors => {
+                console.log(errors);
+            });
         } else if (!isValidHttpUrl) {
           showErrorMessage("<span>The URL is not valid</span>");
           addInstanceButton.disabled = true;
