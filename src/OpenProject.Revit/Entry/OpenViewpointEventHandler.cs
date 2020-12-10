@@ -332,15 +332,5 @@ namespace OpenProject.Revit.Entry
              let view = elem as View3D
              select view;
     }
-
-    private static IEnumerable<View> getSheets(Document doc, int id, string stname)
-    {
-      ElementId eid = new ElementId(id);
-      return from elem in new FilteredElementCollector(doc).OfClass(typeof(View))
-             let view = elem as View
-             //Get the view with the given Id or given name
-             where view.Id == eid | view.Name == stname
-             select view;
-    }
   }
 }
