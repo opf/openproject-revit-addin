@@ -116,7 +116,7 @@ namespace OpenProject.Revit.Entry
           return;
         }
 
-        ExtEvntOpenView.ShowBcfViewpoint(_uiapp, view);
+        OpenViewpointEventHandler.ShowBcfViewpoint(_uiapp, view);
       }
       catch (System.Exception ex1)
       {

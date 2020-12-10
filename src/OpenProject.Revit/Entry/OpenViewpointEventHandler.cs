@@ -14,7 +14,7 @@ namespace OpenProject.Revit.Entry
   /// <summary>
   /// Obfuscation Ignore for External Interface
   /// </summary>
-  public class ExtEvntOpenView : IExternalEventHandler
+  public class OpenViewpointEventHandler : IExternalEventHandler
   {
     /// <summary>
     /// This is the method declared in the <see cref="IExternalEventHandler"/> interface
@@ -26,18 +26,18 @@ namespace OpenProject.Revit.Entry
       ShowBcfViewpointInternal(app);
     }
 
-    public string GetName() => nameof(ExtEvntOpenView);
+    public string GetName() => nameof(OpenViewpointEventHandler);
 
     private static int _viewSequence = 0;
     private BcfViewpointViewModel _bcfViewpoint;
 
-    private static ExtEvntOpenView _instance;
-    private static ExtEvntOpenView Instance {
+    private static OpenViewpointEventHandler _instance;
+    private static OpenViewpointEventHandler Instance {
       get
       {
         if (_instance == null)
         {
-          _instance = new ExtEvntOpenView();
+          _instance = new OpenViewpointEventHandler();
           ExternalEvent = ExternalEvent.Create(_instance);
         }
 
