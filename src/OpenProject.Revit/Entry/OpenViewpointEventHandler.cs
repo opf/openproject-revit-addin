@@ -1,4 +1,4 @@
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using OpenProject.Revit.Data;
@@ -64,12 +64,12 @@ namespace OpenProject.Revit.Entry
         Document doc = uidoc.Document;
 
         // IS ORTHOGONAL
-        if (_bcfViewpoint.OrthogonalCamera != null)
+        if (_bcfViewpoint.Viewpoint?.Orthogonal_camera != null)
         {
           ShowOrthogonalView(_bcfViewpoint, doc, uidoc, app);
         }
         //perspective
-        else if (_bcfViewpoint.PerspectiveCamera != null)
+        else if (_bcfViewpoint.Viewpoint?.Perspective_camera != null)
         {
           ShowPerspectiveView(_bcfViewpoint, doc, uidoc);
         }
@@ -81,8 +81,8 @@ namespace OpenProject.Revit.Entry
 
         ApplyElementStyles(_bcfViewpoint, doc, uidoc);
 
-        // The local callback first needs to be initialized to null since we're
-        // referencing itself in it's body.
+        // The local callback first needs to be initialized to null since it's
+        // referencing itself in its body.
         // The reason for this is that we need to wait for Revit to load the view
         // and prepare everything. After that, we're waiting for the 'Idle' event
         // and instruct Revit to refresh and redraw the view. Otherwise, component
@@ -105,19 +105,26 @@ namespace OpenProject.Revit.Entry
 
     private void ShowOrthogonalView(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc, UIApplication app)
     {
-      if (bcfViewpoint.OrthogonalCamera == null)
+      var orthogonalCamera = bcfViewpoint.Viewpoint?.Orthogonal_camera;
+      if (orthogonalCamera == null)
+      {
         return;
-      //type = "OrthogonalCamera";
-      var zoom = bcfViewpoint.OrthogonalCamera.ViewToWorldScale.ToInternalRevitUnit();
-      var cameraDirection = RevitUtils.GetRevitXYZ(bcfViewpoint.OrthogonalCamera.DirectionX,
-        bcfViewpoint.OrthogonalCamera.DirectionY,
-        bcfViewpoint.OrthogonalCamera.DirectionZ);
-      var cameraUpVector = RevitUtils.GetRevitXYZ(bcfViewpoint.OrthogonalCamera.UpX,
-        bcfViewpoint.OrthogonalCamera.UpY,
-        bcfViewpoint.OrthogonalCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(bcfViewpoint.OrthogonalCamera.ViewPointX,
-        bcfViewpoint.OrthogonalCamera.ViewPointY,
-        bcfViewpoint.OrthogonalCamera.ViewPointZ);
+      }
+
+      // TODO: Below, we're using the objects from the 'iabi.BCF' package. I'm not sure why, but it's
+      // using float instead of a double for the 'View to World Scale' part. This should probably not
+      // cause any problems, since the lower precision is likely enough for the task, but we might
+      // want to think about maybe just fix the iabi.BCF package.
+      var zoom = Convert.ToDouble(orthogonalCamera.View_to_world_scale).ToInternalRevitUnit();
+      var cameraDirection = RevitUtils.GetRevitXYZ(orthogonalCamera.Camera_direction.X,
+        orthogonalCamera.Camera_direction.Y,
+        orthogonalCamera.Camera_direction.Z);
+      var cameraUpVector = RevitUtils.GetRevitXYZ(orthogonalCamera.Camera_up_vector.X,
+        orthogonalCamera.Camera_up_vector.Y,
+        orthogonalCamera.Camera_up_vector.Z);
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(orthogonalCamera.Camera_view_point.X,
+        orthogonalCamera.Camera_view_point.Y,
+        orthogonalCamera.Camera_view_point.Z);
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, true);
 
       View3D orthoView = null;
@@ -160,27 +167,31 @@ namespace OpenProject.Revit.Entry
 
     private static void ShowPerspectiveView(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc)
     {
-      if (bcfViewpoint.PerspectiveCamera == null)
+      var perspectiveCamera = bcfViewpoint.Viewpoint?.Perspective_camera;
+      if (perspectiveCamera == null)
+      {
         return;
+      }
 
       bcfViewpoint.EnsurePerspectiveCameraVectorsAreOrthogonal();
 
       //not used since the fov cannot be changed in Revit
-      var zoom = bcfViewpoint.PerspectiveCamera.FieldOfView;
+      // This is also a float, similar to the view to world scale
+      var zoom = perspectiveCamera.Field_of_view;
       //FOV - not used
       //double z1 = 18 / Math.Tan(zoom / 2 * Math.PI / 180);
       //double z = 18 / Math.Tan(25 / 2 * Math.PI / 180);
       //double factor = z1 - z;
 
-      var cameraDirection = RevitUtils.GetRevitXYZ(bcfViewpoint.PerspectiveCamera.DirectionX,
-        bcfViewpoint.PerspectiveCamera.DirectionY,
-        bcfViewpoint.PerspectiveCamera.DirectionZ);
-      var cameraUpVector = RevitUtils.GetRevitXYZ(bcfViewpoint.PerspectiveCamera.UpX,
-        bcfViewpoint.PerspectiveCamera.UpY,
-        bcfViewpoint.PerspectiveCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(bcfViewpoint.PerspectiveCamera.ViewPointX,
-        bcfViewpoint.PerspectiveCamera.ViewPointY,
-        bcfViewpoint.PerspectiveCamera.ViewPointZ);
+      var cameraDirection = RevitUtils.GetRevitXYZ(perspectiveCamera.Camera_direction.X,
+        perspectiveCamera.Camera_direction.Y,
+        perspectiveCamera.Camera_direction.Z);
+      var cameraUpVector = RevitUtils.GetRevitXYZ(perspectiveCamera.Camera_up_vector.X,
+        perspectiveCamera.Camera_up_vector.Y,
+        perspectiveCamera.Camera_up_vector.Z);
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(perspectiveCamera.Camera_view_point.X,
+        perspectiveCamera.Camera_view_point.Y,
+        perspectiveCamera.Camera_view_point.Z);
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, false);
 
       View3D perspView = null;
@@ -223,63 +234,84 @@ namespace OpenProject.Revit.Entry
       uidoc.RequestViewChange(perspView);
     }
 
-    private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc)
+    private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document document, UIDocument uiDocument)
     {
-      if (bcfViewpoint.Components == null)
-        return;
-
-      var elementsToSelect = new List<ElementId>();
-      var elementsToHide = new List<ElementId>();
-      var elementsToShow = new List<ElementId>();
-
-      var visibleElems = new FilteredElementCollector(doc, doc.ActiveView.Id)
-      .WhereElementIsNotElementType()
-      .WhereElementIsViewIndependent()
-      .ToElementIds()
-      .Where(e => doc.GetElement(e).CanBeHidden(doc.ActiveView)); //might affect performance, but it's necessary
-
-      //loop elements
-      foreach (var e in visibleElems)
+      if (bcfViewpoint.Components?.Visibility == null)
       {
-        var guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, e));
+        return;
+      }
 
-        if (bcfViewpoint.Components.Any(c => !c.IsVisible && c.IfcGuid == guid))
-        {
-          elementsToHide.Add(e);
-        }
+      var visibleRevitElements = new FilteredElementCollector(document, document.ActiveView.Id)
+        .WhereElementIsNotElementType()
+        .WhereElementIsViewIndependent()
+        .Where(e => e.CanBeHidden(document.ActiveView)) //might affect performance, but it's necessary
+        .Select(e => e.Id)
+        .ToList();
 
-        if (bcfViewpoint.Components.Any(c => c.IsVisible && c.IfcGuid == guid))
+      // We're creating a dictionary of all the Revit internal Ids to be looked up by their IFC Guids
+      // If this proves to be a performance issue, we should cache this dictionary in an instance variable
+      var revitElementsByIfcGuid = new Dictionary<string, ElementId>();
+      foreach (var revitElement in visibleRevitElements)
+      {
+        var ifcGuid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(document, revitElement));
+        if (!revitElementsByIfcGuid.ContainsKey(ifcGuid))
         {
-          elementsToShow.Add(e);
-        }
-
-        if (bcfViewpoint.Components.Any(c => c.IsSelected && c.IfcGuid == guid))
-        {
-          // Selection always means showing a component, too
-          elementsToShow.Add(e);
-          elementsToSelect.Add(e);
+          revitElementsByIfcGuid.Add(ifcGuid, revitElement);
         }
       }
 
-      using (var trans = new Transaction(uidoc.Document))
+      using (var trans = new Transaction(uiDocument.Document))
       {
         if (trans.Start("Apply BCF visibility and selection") == TransactionStatus.Started)
         {
-          if (elementsToHide.Any())
+          if (bcfViewpoint.Components.Visibility.Default_visibility)
           {
-            doc.ActiveView.HideElementsTemporary(elementsToHide);
+            var hiddenElements = new List<ElementId>();
+            foreach (var bcfComponentException in bcfViewpoint.Components.Visibility.Exceptions)
+            {
+              if (revitElementsByIfcGuid.ContainsKey(bcfComponentException.Ifc_guid))
+              {
+                hiddenElements.Add(revitElementsByIfcGuid[bcfComponentException.Ifc_guid]);
+              }
+            }
+
+            if (hiddenElements.Any())
+            {
+              document.ActiveView.HideElementsTemporary(hiddenElements);
+            }
           }
-          else if (elementsToShow.Any())
+          else
           {
-            // TODO: After support for default visibility is added and if the default visibility is false,
-            // we should use 'doc.ActiveView.IsolateElementsTemporary(elementsToShow);' to only show
-            // visible elements and hide all else
-            doc.ActiveView.UnhideElements(elementsToShow);
+            var visibleElements = new List<ElementId>();
+            foreach (var bcfComponentException in bcfViewpoint.Components.Visibility.Exceptions)
+            {
+              if (revitElementsByIfcGuid.ContainsKey(bcfComponentException.Ifc_guid))
+              {
+                visibleElements.Add(revitElementsByIfcGuid[bcfComponentException.Ifc_guid]);
+              }
+            }
+
+            if (visibleElements.Any())
+            {
+              document.ActiveView.IsolateElementsTemporary(visibleElements);
+            }
           }
 
-          if (elementsToSelect.Any())
+          if (bcfViewpoint.Components.Selection?.Any() ?? false)
           {
-            uidoc.Selection.SetElementIds(elementsToSelect);
+            var selectedElements = new List<ElementId>();
+            foreach (var selectedElement in bcfViewpoint.Components.Selection)
+            {
+              if (revitElementsByIfcGuid.ContainsKey(selectedElement.Ifc_guid))
+              {
+                selectedElements.Add(revitElementsByIfcGuid[selectedElement.Ifc_guid]);
+              }
+            }
+
+            if (selectedElements.Any())
+            {
+              uiDocument.Selection.SetElementIds(selectedElements);
+            }
           }
         }
         trans.Commit();

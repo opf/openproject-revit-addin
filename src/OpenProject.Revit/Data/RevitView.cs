@@ -20,7 +20,7 @@ namespace OpenProject.Revit.Data
       {
         var doc = uidoc.Document;
 
-        var v = new BcfViewpointViewModel();
+        var bcfViewpoint = new BcfViewpointViewModel();
 
         //Corners of the active UI view
         var topLeft = uidoc.GetOpenUIViews()[0].GetZoomCorners()[0];
@@ -62,18 +62,28 @@ namespace OpenProject.Revit.Data
             XYZ vi = t.ForwardDirection;
             XYZ up = t.UpDirection;
 
-            v.OrthogonalCamera = new BcfViewpointOrthogonalCameraViewModel
+            bcfViewpoint.Viewpoint = new iabi.BCF.APIObjects.V21.Viewpoint_GET();
+            bcfViewpoint.Viewpoint.Orthogonal_camera = new iabi.BCF.APIObjects.V21.Orthogonal_camera
             {
-              ViewPointX = c.X.ToMeters(),
-              ViewPointY = c.Y.ToMeters(),
-              ViewPointZ = c.Z.ToMeters(),
-              UpX = up.X,
-              UpY = up.Y,
-              UpZ = up.Z,
-              DirectionX = vi.X * -1,
-              DirectionY = vi.Y * -1,
-              DirectionZ = vi.Z * -1,
-              ViewToWorldScale = zoomValue
+              View_to_world_scale = Convert.ToSingle(zoomValue),
+              Camera_view_point = new iabi.BCF.APIObjects.V21.Point
+              {
+                X = Convert.ToSingle(c.X.ToMeters()),
+                Y = Convert.ToSingle(c.Y.ToMeters()),
+                Z = Convert.ToSingle(c.Z.ToMeters())
+              },
+              Camera_up_vector = new iabi.BCF.APIObjects.V21.Direction
+              {
+                X = Convert.ToSingle(up.X),
+                Y = Convert.ToSingle(up.Y),
+                Z = Convert.ToSingle(up.Z)
+              },
+              Camera_direction = new iabi.BCF.APIObjects.V21.Direction
+              {
+                X = Convert.ToSingle(vi.X * -1),
+                Y = Convert.ToSingle(vi.Y * -1),
+                Z = Convert.ToSingle(vi.Z * -1)
+              }
             };
           }
           // it is a perspective view
@@ -90,22 +100,36 @@ namespace OpenProject.Revit.Data
             XYZ vi = t.ForwardDirection;
             XYZ up = t.UpDirection;
 
-            v.PerspectiveCamera = new BcfViewpointPerspectiveCameraViewModel
+            bcfViewpoint.Viewpoint = new iabi.BCF.APIObjects.V21.Viewpoint_GET();
+            bcfViewpoint.Viewpoint.Perspective_camera = new iabi.BCF.APIObjects.V21.Perspective_camera
             {
-              ViewPointX = c.X.ToMeters(),
-              ViewPointY = c.Y.ToMeters(),
-              ViewPointZ = c.Z.ToMeters(),
-              UpX = up.X,
-              UpY = up.Y,
-              UpZ = up.Z,
-              DirectionX = vi.X * -1,
-              DirectionY = vi.Y * -1,
-              DirectionZ = vi.Z * -1,
-              FieldOfView = zoomValue
+              Field_of_view = Convert.ToSingle(zoomValue),
+              Camera_view_point = new iabi.BCF.APIObjects.V21.Point
+              {
+                X = Convert.ToSingle(c.X.ToMeters()),
+                Y = Convert.ToSingle(c.Y.ToMeters()),
+                Z = Convert.ToSingle(c.Z.ToMeters())
+
+
+              },
+              Camera_up_vector = new iabi.BCF.APIObjects.V21.Direction
+              {
+                X = Convert.ToSingle(up.X),
+                Y = Convert.ToSingle(up.Y),
+                Z = Convert.ToSingle(up.Z)
+
+
+              },
+              Camera_direction = new iabi.BCF.APIObjects.V21.Direction
+              {
+                X = Convert.ToSingle(vi.X * -1),
+                Y = Convert.ToSingle(vi.Y * -1),
+                Z = Convert.ToSingle(vi.Z * -1)
+              }
             };
           }
         }
-        //COMPONENTS PART
+
         string versionName = doc.Application.VersionName;
 
         var visibleElems = new FilteredElementCollector(doc, doc.ActiveView.Id)
@@ -117,50 +141,60 @@ namespace OpenProject.Revit.Data
           .WhereElementIsViewIndependent()
           .Where(x => x.IsHidden(doc.ActiveView)
             || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate, x.Id)).Select(x => x.Id)
+            .ToList()
            ;//would need to check how much this is affecting performance
 
         var selectedElems = uidoc.Selection.GetElementIds();
 
-        //TODO: set ViewSetupHints
         //TODO: create clipping planes
-        //list of hidden components is smaller than the list of visible components
-        foreach (var hiddenComponent in hiddenElems)
+
+        bcfViewpoint.Components = new iabi.BCF.APIObjects.V21.Components();
+        if (hiddenElems.Count > visibleElems.Count)
         {
-          v.Components.Add(new BcfViewpointComponentViewModel
+          bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
           {
-            IsVisible = false,
-            OriginatingSystem = versionName,
-            IfcGuid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, hiddenComponent)),
-            AuthoringToolId = hiddenComponent.IntegerValue.ToString()
-          });
+            Default_visibility = false,
+            Exceptions = visibleElems.Select(visibleComponent => new iabi.BCF.APIObjects.V21.Component
+            {
+              Originating_system = versionName,
+              Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, visibleComponent)),
+              Authoring_tool_id = visibleComponent.IntegerValue.ToString()
+            })
+            .ToList()
+          };
+        }
+        else
+        {
+          bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
+          {
+            Default_visibility = true,
+            Exceptions = hiddenElems.Select(hiddenComponent => new iabi.BCF.APIObjects.V21.Component
+            {
+              Originating_system = versionName,
+              Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, hiddenComponent)),
+              Authoring_tool_id = hiddenComponent.IntegerValue.ToString()
+            })
+            .ToList()
+          };
         }
 
-        foreach (var visibleComponent in visibleElems)
+        if (selectedElems.Any())
         {
-          v.Components.Add(new BcfViewpointComponentViewModel
+          bcfViewpoint.Components.Selection = new System.Collections.Generic.List<iabi.BCF.APIObjects.V21.Component>();
+          foreach (var selectedComponent in selectedElems)
           {
-            IsVisible = true,
-            OriginatingSystem = versionName,
-            IfcGuid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, visibleComponent)),
-            AuthoringToolId = visibleComponent.IntegerValue.ToString()
-          });
+            bcfViewpoint.Components.Selection.Add(new iabi.BCF.APIObjects.V21.Component
+            {
+              Originating_system = versionName,
+              Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, selectedComponent)),
+              Authoring_tool_id = selectedComponent.IntegerValue.ToString()
+            });
+          }
         }
 
-        foreach (var selectedComponent in selectedElems)
-        {
-          v.Components.Add(new BcfViewpointComponentViewModel
-          {
-            IsSelected = true,
-            IsVisible = true,
-            OriginatingSystem = versionName,
-            IfcGuid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, selectedComponent)),
-            AuthoringToolId = selectedComponent.IntegerValue.ToString()
-          });
-        }
-
-        return v;
+        return bcfViewpoint;
       }
-      catch (System.Exception ex1)
+      catch (Exception ex1)
       {
         TaskDialog.Show("Error generating viewpoint", "exception: " + ex1);
       }

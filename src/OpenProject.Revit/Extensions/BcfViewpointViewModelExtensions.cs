@@ -6,23 +6,23 @@ namespace OpenProject.Revit.Extensions
   {
     public static void EnsurePerspectiveCameraVectorsAreOrthogonal(this BcfViewpointViewModel bcfViewpointViewModel)
     {
-      var perspectiveCamera = bcfViewpointViewModel?.PerspectiveCamera;
+      var perspectiveCamera = bcfViewpointViewModel?.Viewpoint?.Perspective_camera;
       if (perspectiveCamera == null)
       {
         return;
       }
 
-      if (perspectiveCamera.DirectionX != 0)
+      if (perspectiveCamera.Camera_direction.X != 0)
       {
-        perspectiveCamera.UpX = -1 * (perspectiveCamera.DirectionY * perspectiveCamera.UpY + perspectiveCamera.DirectionZ * perspectiveCamera.UpZ) / perspectiveCamera.DirectionX;
+        perspectiveCamera.Camera_up_vector.X = -1 * (perspectiveCamera.Camera_direction.Y * perspectiveCamera.Camera_up_vector.Y + perspectiveCamera.Camera_direction.Z * perspectiveCamera.Camera_up_vector.Z) / perspectiveCamera.Camera_direction.X;
       }
-      else if (perspectiveCamera.DirectionY != 0)
+      else if (perspectiveCamera.Camera_direction.Y != 0)
       {
-        perspectiveCamera.UpY = -1 * (perspectiveCamera.DirectionX * perspectiveCamera.UpX + perspectiveCamera.DirectionZ * perspectiveCamera.UpZ) / perspectiveCamera.DirectionY;
+        perspectiveCamera.Camera_up_vector.Y = -1 * (perspectiveCamera.Camera_direction.X * perspectiveCamera.Camera_up_vector.X + perspectiveCamera.Camera_direction.Z * perspectiveCamera.Camera_up_vector.Z) / perspectiveCamera.Camera_direction.Y;
       }
-      else if (perspectiveCamera.DirectionZ != 0)
+      else if (perspectiveCamera.Camera_direction.Z != 0)
       {
-        perspectiveCamera.UpZ = -1 * (perspectiveCamera.DirectionX * perspectiveCamera.UpX + perspectiveCamera.DirectionY * perspectiveCamera.UpY) / perspectiveCamera.DirectionZ;
+        perspectiveCamera.Camera_up_vector.Z = -1 * (perspectiveCamera.Camera_direction.X * perspectiveCamera.Camera_up_vector.X + perspectiveCamera.Camera_direction.Y * perspectiveCamera.Camera_up_vector.Y) / perspectiveCamera.Camera_direction.Z;
       }
     }
   }
