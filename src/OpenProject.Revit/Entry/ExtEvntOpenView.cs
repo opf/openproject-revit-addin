@@ -1,5 +1,6 @@
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Events;
 using OpenProject.Revit.Data;
 using OpenProject.Revit.Extensions;
 using OpenProject.Shared;
@@ -80,7 +81,21 @@ namespace OpenProject.Revit.Entry
 
         ApplyElementStyles(_bcfViewpoint, doc, uidoc);
 
-        uidoc.RefreshActiveView();
+        // The local callback first needs to be initialized to null since we're
+        // referencing itself in it's body.
+        // The reason for this is that we need to wait for Revit to load the view
+        // and prepare everything. After that, we're waiting for the 'Idle' event
+        // and instruct Revit to refresh and redraw the view. Otherwise, component
+        // selection seemed not to work properly.
+        EventHandler<IdlingEventArgs> afterIdleEventHandler = null;
+        afterIdleEventHandler = (_, _) =>
+        {
+            uidoc.RefreshActiveView();
+            app.ActiveUIDocument.UpdateAllOpenViews();
+            app.Idling -= afterIdleEventHandler;
+        };
+
+        app.Idling += afterIdleEventHandler;
       }
       catch (Exception ex)
       {
