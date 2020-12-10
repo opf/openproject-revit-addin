@@ -1,4 +1,4 @@
-﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using OpenProject.Revit.Data;
@@ -103,21 +103,21 @@ namespace OpenProject.Revit.Entry
       }
     }
 
-    private void ShowOrthogonalView(BcfViewpointViewModel v, Document doc, UIDocument uidoc, UIApplication app)
+    private void ShowOrthogonalView(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc, UIApplication app)
     {
-      if (v.OrthogonalCamera == null)
+      if (bcfViewpoint.OrthogonalCamera == null)
         return;
       //type = "OrthogonalCamera";
-      var zoom = v.OrthogonalCamera.ViewToWorldScale.ToInternalRevitUnit();
-      var cameraDirection = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.DirectionX,
-        v.OrthogonalCamera.DirectionY,
-        v.OrthogonalCamera.DirectionZ);
-      var cameraUpVector = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.UpX,
-        v.OrthogonalCamera.UpY,
-        v.OrthogonalCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.OrthogonalCamera.ViewPointX,
-        v.OrthogonalCamera.ViewPointY,
-        v.OrthogonalCamera.ViewPointZ);
+      var zoom = bcfViewpoint.OrthogonalCamera.ViewToWorldScale.ToInternalRevitUnit();
+      var cameraDirection = RevitUtils.GetRevitXYZ(bcfViewpoint.OrthogonalCamera.DirectionX,
+        bcfViewpoint.OrthogonalCamera.DirectionY,
+        bcfViewpoint.OrthogonalCamera.DirectionZ);
+      var cameraUpVector = RevitUtils.GetRevitXYZ(bcfViewpoint.OrthogonalCamera.UpX,
+        bcfViewpoint.OrthogonalCamera.UpY,
+        bcfViewpoint.OrthogonalCamera.UpZ);
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(bcfViewpoint.OrthogonalCamera.ViewPointX,
+        bcfViewpoint.OrthogonalCamera.ViewPointY,
+        bcfViewpoint.OrthogonalCamera.ViewPointZ);
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, true);
 
       View3D orthoView = null;
@@ -158,29 +158,29 @@ namespace OpenProject.Revit.Entry
       viewChangedZoomListener.ListenForActiveViewChangeAndSetZoom();
     }
 
-    private static void ShowPerspectiveView(BcfViewpointViewModel v, Document doc, UIDocument uidoc)
+    private static void ShowPerspectiveView(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc)
     {
-      if (v.PerspectiveCamera == null)
+      if (bcfViewpoint.PerspectiveCamera == null)
         return;
 
-      v.EnsurePerspectiveCameraVectorsAreOrthogonal();
+      bcfViewpoint.EnsurePerspectiveCameraVectorsAreOrthogonal();
 
       //not used since the fov cannot be changed in Revit
-      var zoom = v.PerspectiveCamera.FieldOfView;
+      var zoom = bcfViewpoint.PerspectiveCamera.FieldOfView;
       //FOV - not used
       //double z1 = 18 / Math.Tan(zoom / 2 * Math.PI / 180);
       //double z = 18 / Math.Tan(25 / 2 * Math.PI / 180);
       //double factor = z1 - z;
 
-      var cameraDirection = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.DirectionX,
-        v.PerspectiveCamera.DirectionY,
-        v.PerspectiveCamera.DirectionZ);
-      var cameraUpVector = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.UpX,
-        v.PerspectiveCamera.UpY,
-        v.PerspectiveCamera.UpZ);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(v.PerspectiveCamera.ViewPointX,
-        v.PerspectiveCamera.ViewPointY,
-        v.PerspectiveCamera.ViewPointZ);
+      var cameraDirection = RevitUtils.GetRevitXYZ(bcfViewpoint.PerspectiveCamera.DirectionX,
+        bcfViewpoint.PerspectiveCamera.DirectionY,
+        bcfViewpoint.PerspectiveCamera.DirectionZ);
+      var cameraUpVector = RevitUtils.GetRevitXYZ(bcfViewpoint.PerspectiveCamera.UpX,
+        bcfViewpoint.PerspectiveCamera.UpY,
+        bcfViewpoint.PerspectiveCamera.UpZ);
+      var cameraViewPoint = RevitUtils.GetRevitXYZ(bcfViewpoint.PerspectiveCamera.ViewPointX,
+        bcfViewpoint.PerspectiveCamera.ViewPointY,
+        bcfViewpoint.PerspectiveCamera.ViewPointZ);
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, false);
 
       View3D perspView = null;
@@ -223,9 +223,9 @@ namespace OpenProject.Revit.Entry
       uidoc.RequestViewChange(perspView);
     }
 
-    private static void ApplyElementStyles(BcfViewpointViewModel v, Document doc, UIDocument uidoc)
+    private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc)
     {
-      if (v.Components == null)
+      if (bcfViewpoint.Components == null)
         return;
 
       var elementsToSelect = new List<ElementId>();
@@ -243,17 +243,17 @@ namespace OpenProject.Revit.Entry
       {
         var guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, e));
 
-        if (v.Components.Any(c => !c.IsVisible && c.IfcGuid == guid))
+        if (bcfViewpoint.Components.Any(c => !c.IsVisible && c.IfcGuid == guid))
         {
           elementsToHide.Add(e);
         }
 
-        if (v.Components.Any(c => c.IsVisible && c.IfcGuid == guid))
+        if (bcfViewpoint.Components.Any(c => c.IsVisible && c.IfcGuid == guid))
         {
           elementsToShow.Add(e);
         }
 
-        if (v.Components.Any(c => c.IsSelected && c.IfcGuid == guid))
+        if (bcfViewpoint.Components.Any(c => c.IsSelected && c.IfcGuid == guid))
         {
           // Selection always means showing a component, too
           elementsToShow.Add(e);
