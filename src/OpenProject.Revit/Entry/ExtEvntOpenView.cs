@@ -1,4 +1,4 @@
-﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using OpenProject.Revit.Data;
 using OpenProject.Revit.Extensions;
@@ -251,13 +251,21 @@ namespace OpenProject.Revit.Entry
         if (trans.Start("Apply BCF visibility and selection") == TransactionStatus.Started)
         {
           if (elementsToHide.Any())
+          {
             doc.ActiveView.HideElementsTemporary(elementsToHide);
-          //there are no items to hide, therefore hide everything and just show the visible ones
+          }
           else if (elementsToShow.Any())
-            doc.ActiveView.IsolateElementsTemporary(elementsToShow);
+          {
+            // TODO: After support for default visibility is added and if the default visibility is false,
+            // we should use 'doc.ActiveView.IsolateElementsTemporary(elementsToShow);' to only show
+            // visible elements and hide all else
+            doc.ActiveView.UnhideElements(elementsToShow);
+          }
 
           if (elementsToSelect.Any())
+          {
             uidoc.Selection.SetElementIds(elementsToSelect);
+          }
         }
         trans.Commit();
       }
