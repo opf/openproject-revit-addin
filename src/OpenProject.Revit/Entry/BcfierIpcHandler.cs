@@ -101,9 +101,7 @@ namespace OpenProject.Revit.Entry
     /// http://help.autodesk.com/view/RVT/2014/ENU/?guid=GUID-0A0D656E-5C44-49E8-A891-6C29F88E35C0
     /// http://matteocominetti.com/starting-a-transaction-from-an-external-application-running-outside-of-api-context-is-not-allowed/
     /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void OpenView(BcfViewpointViewModel view)
+    private void OpenView(BcfViewpointViewModel bcfViewpoint)
     {
       try
       {
@@ -116,7 +114,7 @@ namespace OpenProject.Revit.Entry
           return;
         }
 
-        OpenViewpointEventHandler.ShowBcfViewpoint(_uiapp, view);
+        OpenViewpointEventHandler.ShowBcfViewpoint(_uiapp, bcfViewpoint);
       }
       catch (System.Exception ex1)
       {
