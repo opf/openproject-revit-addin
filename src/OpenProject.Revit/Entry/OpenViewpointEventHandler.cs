@@ -231,7 +231,7 @@ namespace OpenProject.Revit.Entry
         }
       }
 
-      uidoc.RequestViewChange(perspView);
+      uidoc.ActiveView = perspView;
     }
 
     private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document document, UIDocument uiDocument)
