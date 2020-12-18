@@ -130,67 +130,7 @@ namespace OpenProject.Revit.Data
           }
         }
 
-        string versionName = doc.Application.VersionName;
-
-        var visibleElems = new FilteredElementCollector(doc, doc.ActiveView.Id)
-          .WhereElementIsNotElementType()
-          .WhereElementIsViewIndependent()
-        .ToElementIds();
-        var hiddenElems = new FilteredElementCollector(doc)
-          .WhereElementIsNotElementType()
-          .WhereElementIsViewIndependent()
-          .Where(x => x.IsHidden(doc.ActiveView)
-            || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate, x.Id)).Select(x => x.Id)
-            .ToList()
-           ;//would need to check how much this is affecting performance
-
-        var selectedElems = uidoc.Selection.GetElementIds();
-
-        //TODO: create clipping planes
-
-        bcfViewpoint.Components = new iabi.BCF.APIObjects.V21.Components();
-        if (hiddenElems.Count > visibleElems.Count)
-        {
-          bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
-          {
-            Default_visibility = false,
-            Exceptions = visibleElems.Select(visibleComponent => new iabi.BCF.APIObjects.V21.Component
-            {
-              Originating_system = versionName,
-              Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, visibleComponent)),
-              Authoring_tool_id = visibleComponent.IntegerValue.ToString()
-            })
-            .ToList()
-          };
-        }
-        else
-        {
-          bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
-          {
-            Default_visibility = true,
-            Exceptions = hiddenElems.Select(hiddenComponent => new iabi.BCF.APIObjects.V21.Component
-            {
-              Originating_system = versionName,
-              Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, hiddenComponent)),
-              Authoring_tool_id = hiddenComponent.IntegerValue.ToString()
-            })
-            .ToList()
-          };
-        }
-
-        if (selectedElems.Any())
-        {
-          bcfViewpoint.Components.Selection = new System.Collections.Generic.List<iabi.BCF.APIObjects.V21.Component>();
-          foreach (var selectedComponent in selectedElems)
-          {
-            bcfViewpoint.Components.Selection.Add(new iabi.BCF.APIObjects.V21.Component
-            {
-              Originating_system = versionName,
-              Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, selectedComponent)),
-              Authoring_tool_id = selectedComponent.IntegerValue.ToString()
-            });
-          }
-        }
+        SetViewpointComponents(bcfViewpoint, doc, uidoc);
 
         return bcfViewpoint;
       }
@@ -199,6 +139,73 @@ namespace OpenProject.Revit.Data
         TaskDialog.Show("Error generating viewpoint", "exception: " + ex1);
       }
       return null;
+    }
+
+    private static void SetViewpointComponents(BcfViewpointViewModel bcfViewpoint,
+      Document doc,
+      UIDocument uidoc)
+    {
+      string versionName = doc.Application.VersionName;
+
+      var visibleElems = new FilteredElementCollector(doc, doc.ActiveView.Id)
+        .WhereElementIsNotElementType()
+        .WhereElementIsViewIndependent()
+      .ToElementIds();
+      var hiddenElems = new FilteredElementCollector(doc)
+        .WhereElementIsNotElementType()
+        .WhereElementIsViewIndependent()
+        .Where(x => x.IsHidden(doc.ActiveView)
+          || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate, x.Id)).Select(x => x.Id)
+          .ToList()
+         ;//would need to check how much this is affecting performance
+
+      var selectedElems = uidoc.Selection.GetElementIds();
+
+      //TODO: create clipping planes
+
+      bcfViewpoint.Components = new iabi.BCF.APIObjects.V21.Components();
+      if (hiddenElems.Count > visibleElems.Count)
+      {
+        bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
+        {
+          Default_visibility = false,
+          Exceptions = visibleElems.Select(visibleComponent => new iabi.BCF.APIObjects.V21.Component
+          {
+            Originating_system = versionName,
+            Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, visibleComponent)),
+            Authoring_tool_id = visibleComponent.IntegerValue.ToString()
+          })
+          .ToList()
+        };
+      }
+      else
+      {
+        bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
+        {
+          Default_visibility = true,
+          Exceptions = hiddenElems.Select(hiddenComponent => new iabi.BCF.APIObjects.V21.Component
+          {
+            Originating_system = versionName,
+            Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, hiddenComponent)),
+            Authoring_tool_id = hiddenComponent.IntegerValue.ToString()
+          })
+          .ToList()
+        };
+      }
+
+      if (selectedElems.Any())
+      {
+        bcfViewpoint.Components.Selection = new System.Collections.Generic.List<iabi.BCF.APIObjects.V21.Component>();
+        foreach (var selectedComponent in selectedElems)
+        {
+          bcfViewpoint.Components.Selection.Add(new iabi.BCF.APIObjects.V21.Component
+          {
+            Originating_system = versionName,
+            Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, selectedComponent)),
+            Authoring_tool_id = selectedComponent.IntegerValue.ToString()
+          });
+        }
+      }
     }
   }
 }
