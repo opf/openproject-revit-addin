@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Autodesk.Revit.DB;
 
 namespace OpenProject.Revit.Data
@@ -86,6 +86,7 @@ namespace OpenProject.Revit.Data
       return UnitUtils.ConvertFromInternalUnits(internalUnits, DisplayUnitType.DUT_METERS);
 #endif
     }
+
     /// <summary>
     /// Converts meters units to feet. Feet are the internal Revit units.
     /// </summary>
