@@ -1,4 +1,4 @@
-﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using OpenProject.Shared;
 using OpenProject.Shared.ViewModels.Bcf;
@@ -109,16 +109,12 @@ namespace OpenProject.Revit.Data
                 X = Convert.ToSingle(c.X.ToMeters()),
                 Y = Convert.ToSingle(c.Y.ToMeters()),
                 Z = Convert.ToSingle(c.Z.ToMeters())
-
-
               },
               Camera_up_vector = new iabi.BCF.APIObjects.V21.Direction
               {
                 X = Convert.ToSingle(up.X),
                 Y = Convert.ToSingle(up.Y),
                 Z = Convert.ToSingle(up.Z)
-
-
               },
               Camera_direction = new iabi.BCF.APIObjects.V21.Direction
               {
