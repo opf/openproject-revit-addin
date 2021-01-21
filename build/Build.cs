@@ -262,6 +262,7 @@ namespace OpenProject.Shared
               .SetOutputDirectory(OutputDirectory / "OpenProject.Revit" / config))));
 
         OutputDirectory.GlobFiles("**/*.pdb",
+            "**/*.md",
             "**/*.txt",
             "**/*.xml",
             "**/*.XML")
