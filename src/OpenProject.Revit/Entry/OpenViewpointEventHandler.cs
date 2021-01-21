@@ -153,7 +153,7 @@ namespace OpenProject.Revit.Entry
       if (orthoView == null)
       {
         //try to use an existing 3D view
-        IEnumerable<View3D> viewcollector3D = get3DViews(doc);
+        IEnumerable<View3D> viewcollector3D = Get3dViews(doc);
         if (viewcollector3D.Any(o => o.Name == "{3D}" || o.Name == "BCFortho"))
           orthoView = viewcollector3D.First(o => o.Name == "{3D}" || o.Name == "BCFortho");
       }
@@ -163,7 +163,7 @@ namespace OpenProject.Revit.Entry
         {
           if (orthoView == null)
           {
-            orthoView = View3D.CreateIsometric(doc, getFamilyViews(doc).First().Id);
+            orthoView = View3D.CreateIsometric(doc, GetFamilyViews(doc).First().Id);
             orthoView.Name = "BCFortho";
           }
           else
@@ -211,7 +211,7 @@ namespace OpenProject.Revit.Entry
 
       View3D perspView = null;
       //try to use an existing 3D view
-      IEnumerable<View3D> viewcollector3D = get3DViews(doc);
+      IEnumerable<View3D> viewcollector3D = Get3dViews(doc);
       if (viewcollector3D.Any(o => o.Name == "BCFpersp"))
         perspView = viewcollector3D.First(o => o.Name == "BCFpersp");
 
@@ -221,7 +221,7 @@ namespace OpenProject.Revit.Entry
         {
           if (null == perspView)
           {
-            perspView = View3D.CreatePerspective(doc, getFamilyViews(doc).First().Id);
+            perspView = View3D.CreatePerspective(doc, GetFamilyViews(doc).First().Id);
             perspView.Name = "BCFpersp";
           }
           else
@@ -457,7 +457,7 @@ namespace OpenProject.Revit.Entry
       return true;
     }
 
-    private static IEnumerable<ViewFamilyType> getFamilyViews(Document doc)
+    private static IEnumerable<ViewFamilyType> GetFamilyViews(Document doc)
     {
       return from elem in new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType))
              let type = elem as ViewFamilyType
@@ -465,7 +465,7 @@ namespace OpenProject.Revit.Entry
              select type;
     }
 
-    private static IEnumerable<View3D> get3DViews(Document doc)
+    private static IEnumerable<View3D> Get3dViews(Document doc)
     {
       return from elem in new FilteredElementCollector(doc).OfClass(typeof(View3D))
              let view = elem as View3D
