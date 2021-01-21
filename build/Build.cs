@@ -269,11 +269,6 @@ namespace OpenProject.Shared
           .ForEach(DeleteFile);
 
         SignFilesIfRequirementsMet();
-
-        revitConfigurations.ForEach(revitConfig =>
-        {
-          CopyDirectoryRecursively(OutputDirectory / "OpenProject.Windows", OutputDirectory / "OpenProject.Revit" / revitConfig / "OpenProject.Windows");
-        });
       });
 
   Target CreateSetup => _ => _
