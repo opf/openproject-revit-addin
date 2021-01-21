@@ -8,6 +8,7 @@ using OpenProject.Shared.ViewModels.Bcf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace OpenProject.Revit.Entry
 {
@@ -80,6 +81,20 @@ namespace OpenProject.Revit.Entry
         }
 
         ApplyElementStyles(_bcfViewpoint, doc, uidoc);
+
+        if (!ApplyClippingPlanes(_bcfViewpoint, uidoc)
+          && uidoc.ActiveView is View3D view3d)
+        {
+          using (var trans = new Transaction(uidoc.Document))
+          {
+            if (trans.Start("Disable section box") == TransactionStatus.Started)
+            {
+              view3d.IsSectionBoxActive = false;
+            }
+
+            trans.Commit();
+          }
+        }
 
         // The local callback first needs to be initialized to null since it's
         // referencing itself in its body.
@@ -316,6 +331,130 @@ namespace OpenProject.Revit.Entry
         }
         trans.Commit();
       }
+    }
+
+    private static bool ApplyClippingPlanes(BcfViewpointViewModel bcfViewpoint,
+      UIDocument uiDocument)
+    {
+      if (!(bcfViewpoint.Viewpoint?.Clipping_planes?.Any() ?? false)
+        || !(uiDocument.ActiveView is View3D view3d))
+      {
+        return false;
+      }
+
+      // We need exactly 6 clipping planes to create a section box in Revit,
+      // since 6 planes form a cuboid to enclose the visible space
+      var clippingPlanes = bcfViewpoint.Viewpoint.Clipping_planes;
+      if (clippingPlanes.Count != 6)
+      {
+        return false;
+      }
+
+      // Now we need to get all the combinations of the planes to get the 8 intersection points
+      var numericsPlanes = clippingPlanes
+        .Select(cp =>
+        {
+          var numericsPlane = new System.Numerics.Plane();
+          numericsPlane.Normal = Vector3.Normalize(new Vector3(cp.Direction.X,
+            cp.Direction.Y,
+            cp.Direction.Z));
+
+          var locationX = cp.Location.X.ToInternalRevitUnit();
+          var locationY = cp.Location.Y.ToInternalRevitUnit();
+          var locationZ = cp.Location.Z.ToInternalRevitUnit();
+
+          // See here for how to transform a plane via (location, normal)
+          // to (distance to origin, normal)
+          // https://stackoverflow.com/a/3863777/4190785
+          // We're using 0,0,0 as the origin here to stay consistent with our export.
+          // Also, other application will likely not use the Revit-specific project zero point
+          // but just 0,0,0 in world coordinates
+          var deltaVector = Vector3.Subtract(new Vector3(0,0,0), new Vector3(locationX,
+            locationY,
+            locationZ));
+          var distanceToOrigin = Vector3.Dot(numericsPlane.Normal, deltaVector);
+          numericsPlane.D = Convert.ToSingle(distanceToOrigin);
+          return numericsPlane;
+        })
+        .ToList();
+
+      // We're getting 120 combinations for the planes here
+      var combinations = (from p0 in numericsPlanes
+                          from p1 in numericsPlanes.Where(rp => rp != p0)
+                          from p2 in numericsPlanes.Where(rp => rp != p0 && rp != p1)
+                          where p0 != p1 && p1 != p2
+                          select new { p0, p1, p2 })
+                         .ToList();
+
+      var intersectionPoints = new List<Vector3>();
+      foreach (var combination in combinations)
+      {
+        if (PlanesHaveSingleIntersectionPoint(combination.p0,
+          combination.p1,
+          combination.p2,
+          out var intersectionPoint)
+          && !intersectionPoints.Any(ip => ip.X == intersectionPoint.X
+            && ip.Y == intersectionPoint.Y
+            && ip.Z == intersectionPoint.Z))
+        {
+          intersectionPoints.Add(intersectionPoint);
+        }
+      }
+
+      // We should have 8 intersection points left for the 8 corners of the cuboid that
+      // represents the bounding box
+      if (intersectionPoints.Count != 8)
+      {
+        return false;
+      }
+
+      // Now we need to get the min and max - basically, two corners opposite to eachother between
+      // which the bounding box is spanned. Everything outside of this cuboid is cut off and hidden
+      // by the bounding box
+      var boundingBox = new BoundingBoxXYZ();
+      boundingBox.Max = new XYZ(
+        x: intersectionPoints.Max(ip => ip.X),
+        y: intersectionPoints.Max(ip => ip.Y),
+        z: intersectionPoints.Max(ip => ip.Z));
+      boundingBox.Min = new XYZ(
+        x: intersectionPoints.Min(ip => ip.X),
+        y: intersectionPoints.Min(ip => ip.Y),
+        z: intersectionPoints.Min(ip => ip.Z));
+
+      using (var trans = new Transaction(uiDocument.Document))
+      {
+        if (trans.Start("Apply BCF section box") == TransactionStatus.Started)
+        {
+          view3d.SetSectionBox(boundingBox);
+          view3d.IsSectionBoxActive = true;
+        }
+
+        trans.Commit();
+        return true;
+      }
+    }
+
+    // Taken from https://gist.github.com/StagPoint/2eaa878f151555f9f96ae7190f80352e
+    private static bool PlanesHaveSingleIntersectionPoint(System.Numerics.Plane p0,
+      System.Numerics.Plane p1,
+      System.Numerics.Plane p2,
+      out Vector3 intersectionPoint)
+    {
+      const float EPSILON = 1e-4f;
+
+      var det = Vector3.Dot(Vector3.Cross(p0.Normal, p1.Normal), p2.Normal);
+      if (det < EPSILON)
+      {
+        intersectionPoint = Vector3.Zero;
+        return false;
+      }
+
+      intersectionPoint =
+        (-(p0.D * Vector3.Cross(p1.Normal, p2.Normal)) -
+        (p1.D * Vector3.Cross(p2.Normal, p0.Normal)) -
+        (p2.D * Vector3.Cross(p0.Normal, p1.Normal))) / det;
+
+      return true;
     }
 
     private static IEnumerable<ViewFamilyType> getFamilyViews(Document doc)
