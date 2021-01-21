@@ -29,7 +29,6 @@ namespace OpenProject.Revit.Entry
 
     public string GetName() => nameof(OpenViewpointEventHandler);
 
-    private static int _viewSequence = 0;
     private BcfViewpointViewModel _bcfViewpoint;
 
     private static OpenViewpointEventHandler _instance;
