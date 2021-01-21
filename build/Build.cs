@@ -8,9 +8,11 @@ using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.MSBuild;
 using Nuke.Common.Tools.NuGet;
+using Nuke.Common.Tools.SignTool;
 using Nuke.Common.Utilities.Collections;
 using Nuke.GitHub;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -35,6 +37,8 @@ class Build : NukeBuild
   readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
   [Parameter] readonly string GitHubAuthenticationToken;
+  [Parameter] readonly string CodeSigningCertBase64;
+  [Parameter] readonly string CodeSigningCertPassword;
 
   [PackageExecutable("Tools.InnoSetup", "tools/ISCC.exe")] readonly Tool InnoSetup;
 
@@ -43,6 +47,57 @@ class Build : NukeBuild
   [GitVersion(Framework = "netcoreapp3.1")] readonly GitVersion GitVersion;
 
   AbsolutePath OutputDirectory => RootDirectory / "output";
+
+  private static HashSet<string> _alreadySignedFiles = new HashSet<string>();
+
+  private void SignFilesIfRequirementsMet(string filePath = null)
+  {
+    if (string.IsNullOrWhiteSpace(CodeSigningCertBase64))
+    {
+      Logger.Normal("Skipping file signing due to no certificate being provided");
+      return;
+    }
+
+    var filesToSign = filePath == null
+       // If no file path is specified, we sign all *.exe and *.dll files
+       // in the output directory that have 'OpenProject' in their filename
+       ? GlobFiles(OutputDirectory, "**/*OpenProject*.exe")
+        .Concat(GlobFiles(OutputDirectory, "**/*OpenProject*.dll"))
+        .Where(file => !_alreadySignedFiles.Contains(file))
+        .Distinct()
+        .ToList()
+        // In case a file path is given directly, we're using that
+        : new[] { filePath }.ToList();
+
+
+    filesToSign.ForEach(f => _alreadySignedFiles.Add(f));
+
+    if (filesToSign.Any())
+    {
+      var certFilePath = OutputDirectory / $"{Guid.NewGuid()}-cert.pfx";
+      var certContent = Convert.FromBase64String(CodeSigningCertBase64);
+      WriteAllBytes(certFilePath, certContent);
+
+      Logger.Normal($"Signing files:{Environment.NewLine}{filesToSign.Aggregate((c, n) => c + Environment.NewLine + n)}");
+
+      try
+      {
+        SignToolTasks
+            .SignTool(c => c
+              .SetFileDigestAlgorithm("SHA256")
+              .SetFile(certFilePath)
+              .SetFiles(filesToSign)
+              .SetPassword(CodeSigningCertPassword)
+              .SetTimestampServerDigestAlgorithm("SHA256")
+              .SetRfc3161TimestampServerUrl("http://timestamp.digicert.com")
+            );
+      }
+      finally
+      {
+        DeleteFile(certFilePath);
+      }
+    }
+  }
 
   Target Clean => _ => _
       .Before(Restore)
@@ -212,6 +267,8 @@ namespace OpenProject.Shared
             "**/*.XML")
           .ForEach(DeleteFile);
 
+        SignFilesIfRequirementsMet();
+
         revitConfigurations.ForEach(revitConfig =>
         {
           CopyDirectoryRecursively(OutputDirectory / "OpenProject.Windows", OutputDirectory / "OpenProject.Revit" / revitConfig / "OpenProject.Windows");
@@ -225,6 +282,7 @@ namespace OpenProject.Shared
         // The Inno Setup tool generates a single, self contained setup application
         // in the root directory as OpenProject.exe. This can be distributed for installation
         InnoSetup($"{RootDirectory / "InnoSetup" / "OpenProject.iss"}");
+        SignFilesIfRequirementsMet(OutputDirectory / "OpenProject.Revit.exe");
       });
 
   Target PublishGitHubRelease => _ => _
