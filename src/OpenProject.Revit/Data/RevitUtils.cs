@@ -6,9 +6,9 @@ namespace OpenProject.Revit.Data
   public static class RevitUtils
   {
     /// <summary>
-    //MOVES THE CAMERA ACCORDING TO THE PROJECT BASE LOCATION 
-    //function that changes the coordinates accordingly to the project base location to an absolute location (for BCF export)
-    //if the value negative is set to true, does the opposite (for opening BCF views)
+    /// MOVES THE CAMERA ACCORDING TO THE PROJECT BASE LOCATION 
+    /// function that changes the coordinates accordingly to the project base location to an absolute location (for BCF export)
+    /// if the value negative is set to true, does the opposite (for opening BCF views)
     /// </summary>
     /// <param name="c">center</param>
     /// <param name="view">view direction</param>
