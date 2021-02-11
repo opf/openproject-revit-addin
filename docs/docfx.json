@@ -1,0 +1,31 @@
+{
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.md",
+          "**/*.yml"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "**/*.png"
+        ]
+      }
+    ],
+    "globalMetadata": {
+      "_appTitle": "OpenProject Revit AddIn Documentation",
+      "_appFooter": "&copy; <a href=\"https://www.openproject.org/\" target=\"_blank\">OpenProject GmbH</a>",
+      "_appLogoPath": "images/openproject_sm.png",
+      "_appFaviconPath": "images/openproject.png",
+      "_enableSearch": true,
+      "_gitUrlPattern": "github"
+    },
+    "template": [
+      "default",
+      "template"
+    ]
+  }
+}

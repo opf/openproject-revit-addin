@@ -21,6 +21,11 @@
     <PackageReference Include="Nuke.GitHub" Version="2.0.0" />
     <PackageReference Include="Octokit" Version="0.48.0" />
     <PackageReference Include="Tools.InnoSetup" Version="6.1.2" />
+    <PackageReference Include="docfx.console" Version="2.56.6">
+      <ExcludeAssets>build</ExcludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>

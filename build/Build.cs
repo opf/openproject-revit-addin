@@ -22,6 +22,8 @@ using static Nuke.Common.IO.TextTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
 using static Nuke.GitHub.GitHubTasks;
+using static Nuke.Common.Tools.DocFX.DocFXTasks;
+using Nuke.Common.Tools.DocFX;
 
 [CheckBuildProjectConfigurations]
 [UnsetVisualStudioEnvironmentVariables]
@@ -43,6 +45,9 @@ class Build : NukeBuild
   [GitVersion(Framework = "netcoreapp3.1")] readonly GitVersion GitVersion;
 
   AbsolutePath OutputDirectory => RootDirectory / "output";
+  AbsolutePath DocFxFile => RootDirectory / "docs" / "docfx.json";
+  AbsolutePath ChangelogFile => RootDirectory / "CHANGELOG.md";
+  AbsolutePath DocsDirectory => RootDirectory / "docs";
 
   private static HashSet<string> _alreadySignedFiles = new HashSet<string>();
 
@@ -347,4 +352,16 @@ namespace OpenProject.Shared
       var transformedHtml = htmlDoc.DocumentNode.OuterHtml;
       WriteAllText(landingPageFolder / "generated.html", transformedHtml);
     });
+
+  Target BuildDocumentation => _ => _
+      .DependsOn(Clean)
+      .Executes(() =>
+      {
+        CopyFile(RootDirectory / "README.md", DocsDirectory / "index.md", FileExistsPolicy.Overwrite);
+        DocFXBuild(x => x
+              .SetProcessEnvironmentVariable("DOCFX_SOURCE_BRANCH_NAME", GitVersion.BranchName)
+              .SetOutputFolder(OutputDirectory)
+              .SetConfigFile(DocFxFile));
+        DeleteFile(DocsDirectory / "index.md");
+      });
 }
