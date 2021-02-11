@@ -11,14 +11,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageDownload Include="GitVersion.Tool" Version="[5.5.1]" />
-	<PackageReference Include="HtmlAgilityPack" Version="1.11.30" />
-	<PackageReference Include="NuGet.CommandLine" Version="5.8.1">
-	  <PrivateAssets>all</PrivateAssets>
-	  <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-	</PackageReference>
-	<PackageReference Include="Nuke.Common" Version="5.0.2" />
-	<PackageReference Include="Nuke.GitHub" Version="2.0.0" />
+    <PackageDownload Include="GitVersion.Tool" Version="[5.5.1]" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.30" />
+    <PackageReference Include="NuGet.CommandLine" Version="5.8.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Nuke.Common" Version="5.0.2" />
+    <PackageReference Include="Nuke.GitHub" Version="2.0.0" />
     <PackageReference Include="Octokit" Version="0.48.0" />
     <PackageReference Include="Tools.InnoSetup" Version="6.1.2" />
   </ItemGroup>
@@ -40,5 +40,4 @@
     <None Include="..\.travis.yml" Condition="Exists('..\.travis.yml')" />
     <None Include="..\GitVersion.yml" Condition="Exists('..\GitVersion.yml')" />
   </ItemGroup>
-
 </Project>
