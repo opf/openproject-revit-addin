@@ -16,14 +16,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.IO.TextTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
-using static Nuke.Common.Tools.MSBuild.MSBuildTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
 using static Nuke.GitHub.GitHubTasks;
 
@@ -68,7 +64,6 @@ class Build : NukeBuild
         .ToList()
         // In case a file path is given directly, we're using that
         : new[] { filePath }.ToList();
-
 
     filesToSign.ForEach(f => _alreadySignedFiles.Add(f));
 
