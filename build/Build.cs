@@ -4,6 +4,7 @@ using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
+using Nuke.Common.Tools.DocFX;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.MSBuild;
@@ -16,20 +17,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using static Nuke.Common.IO.CompressionTasks;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.IO.TextTasks;
+using static Nuke.Common.Tools.DocFX.DocFXTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
 using static Nuke.GitHub.GitHubTasks;
-using static Nuke.Common.Tools.DocFX.DocFXTasks;
-using Nuke.Common.Tools.DocFX;
 
 [CheckBuildProjectConfigurations]
 [UnsetVisualStudioEnvironmentVariables]
 class Build : NukeBuild
 {
-  public static int Main() => Execute<Build>(x => x.PublishGitHubRelease);
+  public static int Main() => Execute<Build>(x => x.BuildDocumentation);
 
   [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
   readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
@@ -282,6 +283,7 @@ namespace OpenProject.Shared
 
   Target PublishGitHubRelease => _ => _
       .DependsOn(CreateSetup)
+      .DependsOn(BuildDocumentation)
       .Requires(() => GitHubAuthenticationToken)
       .Executes(async () =>
       {
@@ -289,11 +291,18 @@ namespace OpenProject.Shared
         var isStableRelease = GitVersion.BranchName.Equals("master") || GitVersion.BranchName.Equals("origin/master") || GitVersion.BranchName.Equals("main") || GitVersion.BranchName.Equals("origin/main");
 
         var repositoryInfo = GetGitHubRepositoryInfo(GitRepository);
-        var installationFile = GlobFiles(OutputDirectory, "OpenProject.Revit.exe").NotEmpty().ToArray();
+        var installationFile = GlobFiles(OutputDirectory, "OpenProject.Revit.exe").NotEmpty().Single();
+
+        var artifactPaths = new string[]
+        {
+          installationFile,
+          OutputDirectory / "InstallationInstructions.pdf",
+          OutputDirectory / "Documentation.zip"
+        };
 
         await PublishRelease(x => x
               .SetPrerelease(!isStableRelease)
-              .SetArtifactPaths(installationFile)
+              .SetArtifactPaths(artifactPaths)
               .SetCommitSha(GitVersion.Sha)
               .SetRepositoryName(repositoryInfo.repositoryName)
               .SetRepositoryOwner(repositoryInfo.gitHubOwner)
@@ -355,13 +364,22 @@ namespace OpenProject.Shared
 
   Target BuildDocumentation => _ => _
       .DependsOn(Clean)
-      .Executes(() =>
+      .After(CreateSetup)
+      .Executes(async () =>
       {
         CopyFile(RootDirectory / "README.md", DocsDirectory / "index.md", FileExistsPolicy.Overwrite);
+
         DocFXBuild(x => x
               .SetProcessEnvironmentVariable("DOCFX_SOURCE_BRANCH_NAME", GitVersion.BranchName)
-              .SetOutputFolder(OutputDirectory)
+              .SetOutputFolder(OutputDirectory / "docs")
               .SetConfigFile(DocFxFile));
+
+        var pdfDocsGenerator = new PdfDocsGenerator(OutputDirectory);
+        // This is currently only building the installation instructions
+        await pdfDocsGenerator.BuildPdfDocsAsync();
+
+        Compress(OutputDirectory / "docs", OutputDirectory / "Documentation.zip");
+
         DeleteFile(DocsDirectory / "index.md");
       });
 }
