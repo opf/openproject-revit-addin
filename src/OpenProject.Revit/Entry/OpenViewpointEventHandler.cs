@@ -1,4 +1,4 @@
-﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using OpenProject.Revit.Data;
@@ -250,6 +250,9 @@ namespace OpenProject.Revit.Entry
 
     private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document document, UIDocument uiDocument)
     {
+      // This is to ensure no components are selected
+      uiDocument.Selection.SetElementIds(new List<ElementId>());
+
       if (bcfViewpoint.Components?.Visibility == null)
       {
         return;
