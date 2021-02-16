@@ -1,4 +1,4 @@
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using OpenProject.Revit.Data;
@@ -253,8 +253,28 @@ namespace OpenProject.Revit.Entry
 
     private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document document, UIDocument uiDocument)
     {
-      // This is to ensure no components are selected
-      uiDocument.Selection.SetElementIds(new List<ElementId>());
+      using (var trans = new Transaction(uiDocument.Document))
+      {
+        if (trans.Start("Apply BCF visibility and selection") == TransactionStatus.Started)
+        {
+          // This is to ensure no components are selected
+          uiDocument.Selection.SetElementIds(new List<ElementId>());
+
+          var hiddenRevitElements = new FilteredElementCollector(document)
+            .WhereElementIsNotElementType()
+            .WhereElementIsViewIndependent()
+            .Where(e => e.IsHidden(document.ActiveView)) //might affect performance, but it's necessary
+            .Select(e => e.Id)
+            .ToList();
+
+          if (hiddenRevitElements.Any())
+          {
+            // Resetting hidden elements to show all elements in the model
+            document.ActiveView.UnhideElements(hiddenRevitElements);
+          }
+        }
+        trans.Commit();
+      }
 
       if (bcfViewpoint.Components?.Visibility == null)
       {
@@ -374,7 +394,7 @@ namespace OpenProject.Revit.Entry
           // We're using 0,0,0 as the origin here to stay consistent with our export.
           // Also, other application will likely not use the Revit-specific project zero point
           // but just 0,0,0 in world coordinates
-          var deltaVector = Vector3.Subtract(new Vector3(0,0,0), new Vector3(locationX,
+          var deltaVector = Vector3.Subtract(new Vector3(0, 0, 0), new Vector3(locationX,
             locationY,
             locationZ));
           var distanceToOrigin = Vector3.Dot(numericsPlane.Normal, deltaVector);
