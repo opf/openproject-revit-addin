@@ -32,7 +32,9 @@ namespace OpenProject.Revit.Entry
     private BcfViewpointViewModel _bcfViewpoint;
 
     private static OpenViewpointEventHandler _instance;
-    private static OpenViewpointEventHandler Instance {
+
+    private static OpenViewpointEventHandler Instance
+    {
       get
       {
         if (_instance == null)
@@ -44,6 +46,7 @@ namespace OpenProject.Revit.Entry
         return _instance;
       }
     }
+
     private static ExternalEvent ExternalEvent { get; set; }
 
     /// <summary>
@@ -104,9 +107,9 @@ namespace OpenProject.Revit.Entry
         EventHandler<IdlingEventArgs> afterIdleEventHandler = null;
         afterIdleEventHandler = (_, _) =>
         {
-            uidoc.RefreshActiveView();
-            app.ActiveUIDocument.UpdateAllOpenViews();
-            app.Idling -= afterIdleEventHandler;
+          uidoc.RefreshActiveView();
+          app.ActiveUIDocument.UpdateAllOpenViews();
+          app.Idling -= afterIdleEventHandler;
         };
 
         app.Idling += afterIdleEventHandler;
