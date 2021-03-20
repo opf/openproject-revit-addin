@@ -304,343 +304,292 @@
     </style>
     
     <script type="text/javascript">
-      let instanceInput;
-      let errorContainer;
-      let previousInstancesList;
-      let addInstanceButton;
-      let previousListTitle;
-      let landingPageContainer;
-      let settingsContainer;
-      let allInstances;
-      let lastValidationCounter = 0;
+        let instanceInput;
+        let errorContainer;
+        let previousInstancesList;
+        let addInstanceButton;
+        let previousListTitle;
+        let landingPageContainer;
+        let settingsContainer;
+        let allInstances;
 
-      function debounce(func, wait) {
-        let timeout;
+        function debounce(func, wait) {
+            let timeout;
 
-        return function executedFunction(...args) {
-          const later = () => {
-            timeout = null;
-            func(...args);
-          };
+            return function executedFunction(...args) {
+                const later = () => {
+                    timeout = null;
+                    func(...args);
+                };
 
-          clearTimeout(timeout);
-          timeout = setTimeout(later, wait);
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         };
-      };
 
-      function validateHttpUrl(string) {
-        let url;
+        function validateHttpUrl(string) {
+            let url;
 
-        try {
-          url = new URL(string);
-        } catch (_) {
-          return false;  
-        }
-
-        return url.protocol === "http:" || url.protocol === "https:";
-      }
-
-      function validateInstanceUrl() {
-        const instanceUrl = instanceInput.value;
-        const domains = ['.openproject.com', '.openproject-edge.com', '.openproject-stage.com'];
-        const isSAASDomain = domains.some(domain => instanceUrl.includes(domain));
-        const isValidHttpUrl = validateHttpUrl(instanceUrl);
-        const isAlreadyOnTheList = allInstances && allInstances.includes(instanceUrl);
-
-        if (isAlreadyOnTheList) {
-          showErrorMessage("<span>The URL is already included on this list</span>");
-          addInstanceButton.disabled = true;
-          return;
-        }
-
-        // If the url belongs to an OP SAAS instance
-        // test it against the SAAS API (/instance)
-        if (isSAASDomain && isValidHttpUrl) {
-          if (!instanceUrl.includes('https')) {
-            showErrorMessage("<span>OpenProject URLs must start with 'https'</span>");
-            addInstanceButton.disabled = true;
-            return;
-          }
-
-          let regex = /(?:http[s]*\:\/\/)*(.*?)\.(?=[^\/]*\..{2,5})/i;
-          const instanceName = instanceUrl.match(regex)[1];
-
-          // TODO: Change the Origin header to one of this:
-          // SETTINGS_CORS__ACCEPTED__DOMAINS=https://((www.)?openproject.(com|org))|(openprojectpr.staging.wpengine.com)|(opdev.staging.wpengine.com)|(opdev.wpengine.com)
-          // Or create a new one an add to the endpoint SETTINGS_CORS__ACCEPTED__DOMAINS
-
-          let hasFoundValidInstanceAlready = false;
-          let errorCount = 0;
-          // This counter is used to ensure that we're running the latest validation
-          // We should not update the UI with validation messages if the url was changed
-          const currentCounter = ++lastValidationCounter;
-
-          const validateInstance = (instanceBaseUrl) => {
-              return fetch(`${instanceBaseUrl}/instance`, {
-                  method: 'POST',
-                  body: JSON.stringify({ "instance_name": instanceName }),
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'Accept': 'application/json',
-                  }
-              })
-              .then(response => {
-                  if (currentCounter === lastValidationCounter) {
-                      // We can short circuit if we're getting a valid response
-                      if (!response.ok && response.status === 400) {
-                          // OpenProject returns status code 400 if the instance exists (meaning it can not be created)
-                          // We're using this to detect if it's a valid OpenProject instance
-                          hasFoundValidInstanceAlready = true;
-                          addInstanceButton.disabled = false;
-                          errorContainer.style.display = 'none';
-                      }
-                  }
-              })
-              .catch(error => {
-                  errorCount++;
-              });
-          };
-
-        const instanceUrls = domains.map(domain => `https://start${domain}`);
-        const instanceValidations = instanceUrls.map(instanceUrl => validateInstance(instanceUrl));
-
-        Promise.all(instanceValidations).then(() => {
-                if (currentCounter === lastValidationCounter) {
-                    if (!hasFoundValidInstanceAlready && errorCount === domains.length) {
-                        showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
-                        addInstanceButton.disabled = true;
-                    } else if (!hasFoundValidInstanceAlready) {
-                        // Error count less than the domains requested means there were some responses,
-                        // but the instance url did not exist
-                        showErrorMessage("<span>This URL doesn't belong to an OpenProject instance</span>");
-                        addInstanceButton.disabled = true;
-                    }
-                }
-            })
-            .catch(errors => {
-                console.log(errors);
-            });
-        } else if (!isValidHttpUrl) {
-          showErrorMessage("<span>The URL is not valid</span>");
-          addInstanceButton.disabled = true;
-        } else {
-          errorContainer.style.display = 'none';
-          addInstanceButton.disabled = false;
-        }
-      }
-
-      const debouncedValidateInstanceUrl = debounce(validateInstanceUrl, 700);
-
-      function handleSubmit(event) {
-        if (event) {
-          event.preventDefault();
-        }
-
-        if (addInstanceButton.disabled) {
-          return false; 
-        }
-
-        const selectedInstance = instanceInput.value;
-
-        if (selectedInstance) {
-          window.RevitBridge.sendMessageToRevit('InstanceSelected', '0', selectedInstance);
-        } else {
-          showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
-        }
-      }
-
-      function showErrorMessage(message) {
-        errorContainer.innerHTML = message;
-        errorContainer.style.display = 'block';
-      };
-
-      function removeInstance(instanceUrl) {
-        window.RevitBridge.sendMessageToRevit('RemoveInstance', '0', instanceUrl);
-        allInstances = allInstances.filter(instance => instance !== instanceUrl);
-        renderPreviousInstancesList(allInstances);
-      }
-
-      function showElement(element) {
-        element.style.display = 'block';
-        element.style.position = 'relative';
-        element.style.opacity = '1';
-        element.style.zIndex = 0;
-      }
-
-      function renderPreviousInstancesList(allInstances) {
-        // Empty list
-        previousInstancesList.innerHTML = '';
-
-        allInstances.forEach((instance, index) => {
-          // Create the list of the last used instance urls
-          const templateClone = document.querySelector('#listItemTemplate').content.cloneNode(true);
-          const listItem = templateClone.querySelector('.list_item__wrapper');
-          const url = document.createElement('div');
-          const goButton = templateClone.querySelector('.go-button');
-          const deleteButton = templateClone.querySelector('.delete-button');
-
-          goButton.dataset.instance = instance;
-          deleteButton.dataset.instance = instance;
-
-          goButton.addEventListener('click', event => {
-            window.RevitBridge.sendMessageToRevit('InstanceSelected', '0', event.target.dataset.instance);
-          });
-
-          deleteButton.addEventListener('click', event => {
-            const instanceToRemove = event.target.dataset.instance || event.target.parentElement.dataset.instance;
-
-            removeInstance(instanceToRemove);
-          });
-
-          url.innerHTML = `<p>${instance}</p>`;
-          listItem.insertBefore(url, goButton);
-
-          previousInstancesList.appendChild(templateClone);
-        });
-      }
-
-      function setUpInstancesList() {
-        const addInstanceButtonContainer = document.querySelector('.add_instance__open');
-        const addInstanceInput = document.querySelector('.add_instance__input');
-        const addInstanceInputContainer = document.querySelector('.add_instance__input_container');
-        const closeAddInstanceButton = document.querySelector('.add_instance__close');
-
-        addInstanceButton = addInstanceInputContainer.querySelector('.add_instance__add-button');
-        addInstanceButton.disabled = true;
-
-        const hideAddInstanceBox = () => {
-          addInstanceInputContainer.style.opacity = '0';
-          closeAddInstanceButton.style.opacity = '0';
-          addInstanceButtonContainer.style.height = 'auto';
-          addInstanceInput.value = '';
-          addInstanceButton.disabled = true;
-          errorContainer.style.display = 'none';
-        }
-
-        const addInstance = () => {
-          const selectedInstance = addInstanceInput.value;
-          allInstances = [...allInstances, selectedInstance];
-
-          window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
-          renderPreviousInstancesList(allInstances);
-        }
-
-        const addInstanceAndHideInstanceBox = () => {          
-          addInstance();
-          hideAddInstanceBox();
-        }
-
-        if (allInstances.length > 0) {
-          previousListTitle.style.display = 'flex';
-
-          addInstanceButtonContainer.addEventListener('click', event => {
-            addInstanceInputContainer.style.opacity == false ?
-              addInstanceInputContainer.style.opacity = '1' :
-              addInstanceInputContainer.style.opacity = '0';
-
-            addInstanceInput.focus();
-
-            addInstanceButtonContainer.style.height = '0';
-            closeAddInstanceButton.style.opacity = '1';
-          });
-
-          addInstanceButton.addEventListener('click', event => {
-            addInstanceAndHideInstanceBox();
-          });
-          
-          // Handle Enter key on input
-          addInstanceInput.addEventListener("keyup", function(event) {
-            if (event.keyCode === 13) {
-              event.preventDefault();
-
-              if (addInstanceButton.disabled) {
+            try {
+                url = new URL(string);
+            } catch (_) {
                 return false;
-              }
-
-              addInstanceAndHideInstanceBox();
             }
-          });
 
-          closeAddInstanceButton.addEventListener('click', event => {
-            hideAddInstanceBox();
-          });
+            return url.protocol === "http:" || url.protocol === "https:";
         }
 
-        renderPreviousInstancesList(allInstances);
-      }
-      
-      function setupPage(page) {
-        if (page === 'landing') {
-          showElement(landingPageContainer);
-          errorContainer = document.querySelector('.landing-error');
-          instanceInput = document.getElementById('instance_name_input');
-          addInstanceButton = document.getElementById('submit-button');
-          addInstanceButton.disabled = true;
-          addInstanceButton.addEventListener('click', handleSubmit);
+        let lastInstanceValidationCounter = 0;
 
-          if (navigator.onLine) {
-            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
-          }
-        } else {
-          showElement(settingsContainer);
-          errorContainer = document.querySelector('.settings-error');
-          instanceInput = document.querySelector('.add_instance__input');
+        function processInstanceValidation(trackingId, validationResult) {
+            if (lastInstanceValidationCounter.toString() !== trackingId) {
+                // Not handling stale messages
+                return;
+            }
 
-          setUpInstancesList();
+            if (!validationResult.isValid) {
+                showErrorMessage("<span>The URL is not valid</span>");
+                addInstanceButton.disabled = true;
+            } else {
 
-          if (navigator.onLine) {
-            instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
-          }
+                const instanceUrl = validationResult.instanceBaseUrl;
+
+                const isAlreadyOnTheList = allInstances && allInstances.includes(instanceUrl);
+                if (isAlreadyOnTheList) {
+                    showErrorMessage("<span>The URL is already included on this list</span>");
+                    addInstanceButton.disabled = true;
+                    return;
+                }
+
+                instanceInput.value = instanceUrl;
+                errorContainer.style.display = 'none';
+                addInstanceButton.disabled = false;
+            }
         }
-      }
-      
-      // Setup the sendMessageToOpenProject function that will be
-      // called by the Revit plugin to communicate with this web
-      function setupRevitCommunicationChannel() {
-        if (window.RevitBridge) {
-          const previousCallback = window.RevitBridge.sendMessageToOpenProject;
 
-          window.RevitBridge.sendMessageToOpenProject = function (messageData) {
-            const message = JSON.parse(messageData);
-
-            if (message.messagePayload && message.messagePayload.length) {
-              message.messagePayload = JSON.parse(message.messagePayload);
-            }
-
-            if (message.messageType === 'AllInstances') {
-              // Show settings if there are previous instances
-              if (Array.isArray(message.messagePayload) &&
-                  message.messagePayload.length) {
-                allInstances = message.messagePayload;
-                setupPage('settings');
-              // Show landing page if there are no previous instances                
-              } else {
-                setupPage('landing');
-              }
-            }
-
-            if (previousCallback) {
-              previousCallback(messageData);
-            }
-          };
-
-          window.RevitBridge.sendMessageToRevit('RequestAllInstances', '0', '');
-        } else {
-          // Need to wait for Revit to be initialized
-          setTimeout(setupRevitCommunicationChannel, 500);
+        function validateInstanceUrl() {
+            const instanceUrl = instanceInput.value;
+            window.RevitBridge.sendMessageToRevit('ValidateInstance',
+                (++lastInstanceValidationCounter).toString(),
+                instanceUrl);
         }
-      }
-      
-      // Setup when the DOM is ready
-      document.addEventListener("DOMContentLoaded", function () {
-        errorContainer = document.getElementById('instance-error-message');
-        previousInstancesList = document.querySelector('.previous_instances__list');
-        previousListTitle = document.querySelector('.previous_instances_title');
-        landingPageContainer = document.querySelector('.landing_page_container');
-        settingsContainer = document.querySelector('.settings_container');
 
-        setupRevitCommunicationChannel();
-      });
+        const debouncedValidateInstanceUrl = debounce(validateInstanceUrl, 700);
+
+        function handleSubmit(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (addInstanceButton.disabled) {
+                return false;
+            }
+
+            const selectedInstance = instanceInput.value;
+
+            if (selectedInstance) {
+                window.RevitBridge.sendMessageToRevit('InstanceSelected', '0', selectedInstance);
+            } else {
+                showErrorMessage('<span>Please provide a valid OpenProject instance url</span>');
+            }
+        }
+
+        function showErrorMessage(message) {
+            errorContainer.innerHTML = message;
+            errorContainer.style.display = 'block';
+        };
+
+        function removeInstance(instanceUrl) {
+            window.RevitBridge.sendMessageToRevit('RemoveInstance', '0', instanceUrl);
+            allInstances = allInstances.filter(instance => instance !== instanceUrl);
+            renderPreviousInstancesList(allInstances);
+        }
+
+        function showElement(element) {
+            element.style.display = 'block';
+            element.style.position = 'relative';
+            element.style.opacity = '1';
+            element.style.zIndex = 0;
+        }
+
+        function renderPreviousInstancesList(allInstances) {
+            // Empty list
+            previousInstancesList.innerHTML = '';
+
+            allInstances.forEach((instance, index) => {
+                // Create the list of the last used instance urls
+                const templateClone = document.querySelector('#listItemTemplate').content.cloneNode(true);
+                const listItem = templateClone.querySelector('.list_item__wrapper');
+                const url = document.createElement('div');
+                const goButton = templateClone.querySelector('.go-button');
+                const deleteButton = templateClone.querySelector('.delete-button');
+
+                goButton.dataset.instance = instance;
+                deleteButton.dataset.instance = instance;
+
+                goButton.addEventListener('click', event => {
+                    window.RevitBridge.sendMessageToRevit('InstanceSelected', '0', event.target.dataset.instance);
+                });
+
+                deleteButton.addEventListener('click', event => {
+                    const instanceToRemove = event.target.dataset.instance || event.target.parentElement.dataset.instance;
+
+                    removeInstance(instanceToRemove);
+                });
+
+                url.innerHTML = `<p>${instance}</p>`;
+                listItem.insertBefore(url, goButton);
+
+                previousInstancesList.appendChild(templateClone);
+            });
+        }
+
+        function setUpInstancesList() {
+            const addInstanceButtonContainer = document.querySelector('.add_instance__open');
+            const addInstanceInput = document.querySelector('.add_instance__input');
+            const addInstanceInputContainer = document.querySelector('.add_instance__input_container');
+            const closeAddInstanceButton = document.querySelector('.add_instance__close');
+
+            addInstanceButton = addInstanceInputContainer.querySelector('.add_instance__add-button');
+            addInstanceButton.disabled = true;
+
+            const hideAddInstanceBox = () => {
+                addInstanceInputContainer.style.opacity = '0';
+                closeAddInstanceButton.style.opacity = '0';
+                addInstanceButtonContainer.style.height = 'auto';
+                addInstanceInput.value = '';
+                addInstanceButton.disabled = true;
+                errorContainer.style.display = 'none';
+            }
+
+            const addInstance = () => {
+                const selectedInstance = addInstanceInput.value;
+                allInstances = [...allInstances, selectedInstance];
+
+                window.RevitBridge.sendMessageToRevit('AddInstance', '0', selectedInstance);
+                renderPreviousInstancesList(allInstances);
+            }
+
+            const addInstanceAndHideInstanceBox = () => {
+                addInstance();
+                hideAddInstanceBox();
+            }
+
+            if (allInstances.length > 0) {
+                previousListTitle.style.display = 'flex';
+
+                addInstanceButtonContainer.addEventListener('click', event => {
+                    addInstanceInputContainer.style.opacity == false ?
+                        addInstanceInputContainer.style.opacity = '1' :
+                        addInstanceInputContainer.style.opacity = '0';
+
+                    addInstanceInput.focus();
+
+                    addInstanceButtonContainer.style.height = '0';
+                    closeAddInstanceButton.style.opacity = '1';
+                });
+
+                addInstanceButton.addEventListener('click', event => {
+                    addInstanceAndHideInstanceBox();
+                });
+
+                // Handle Enter key on input
+                addInstanceInput.addEventListener("keyup", function (event) {
+                    if (event.keyCode === 13) {
+                        event.preventDefault();
+
+                        if (addInstanceButton.disabled) {
+                            return false;
+                        }
+
+                        addInstanceAndHideInstanceBox();
+                    }
+                });
+
+                closeAddInstanceButton.addEventListener('click', event => {
+                    hideAddInstanceBox();
+                });
+            }
+
+            renderPreviousInstancesList(allInstances);
+        }
+
+        function setupPage(page) {
+            if (page === 'landing') {
+                showElement(landingPageContainer);
+                errorContainer = document.querySelector('.landing-error');
+                instanceInput = document.getElementById('instance_name_input');
+                addInstanceButton = document.getElementById('submit-button');
+                addInstanceButton.disabled = true;
+                addInstanceButton.addEventListener('click', handleSubmit);
+
+                if (navigator.onLine) {
+                    instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
+                }
+            } else {
+                showElement(settingsContainer);
+                errorContainer = document.querySelector('.settings-error');
+                instanceInput = document.querySelector('.add_instance__input');
+
+                setUpInstancesList();
+
+                if (navigator.onLine) {
+                    instanceInput.addEventListener('input', debouncedValidateInstanceUrl);
+                }
+            }
+        }
+
+        // Setup the sendMessageToOpenProject function that will be
+        // called by the Revit plugin to communicate with this web
+        function setupRevitCommunicationChannel() {
+            if (window.RevitBridge) {
+                const previousCallback = window.RevitBridge.sendMessageToOpenProject;
+
+                window.RevitBridge.sendMessageToOpenProject = function (messageData) {
+                    const message = JSON.parse(messageData);
+
+                    if (message.messagePayload && message.messagePayload.length) {
+                        message.messagePayload = JSON.parse(message.messagePayload);
+                    }
+
+                    if (message.messageType === 'AllInstances') {
+                        // Show settings if there are previous instances
+                        if (Array.isArray(message.messagePayload) &&
+                            message.messagePayload.length) {
+                            allInstances = message.messagePayload;
+                            setupPage('settings');
+                            // Show landing page if there are no previous instances
+                        } else {
+                            setupPage('landing');
+                        }
+                    }
+
+                    if (message.messageType === 'ValidatedInstance') {
+                        processInstanceValidation(message.trackingId, message.messagePayload);
+                    }
+
+                    if (previousCallback) {
+                        previousCallback(messageData);
+                    }
+                };
+
+                window.RevitBridge.sendMessageToRevit('RequestAllInstances', '0', '');
+            } else {
+                // Need to wait for Revit to be initialized
+                setTimeout(setupRevitCommunicationChannel, 500);
+            }
+        }
+
+        // Setup when the DOM is ready
+        document.addEventListener("DOMContentLoaded", function () {
+            errorContainer = document.getElementById('instance-error-message');
+            previousInstancesList = document.querySelector('.previous_instances__list');
+            previousListTitle = document.querySelector('.previous_instances_title');
+            landingPageContainer = document.querySelector('.landing_page_container');
+            settingsContainer = document.querySelector('.settings_container');
+
+            setupRevitCommunicationChannel();
+        });
     </script>
   </head>
 
