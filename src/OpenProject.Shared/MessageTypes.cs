@@ -16,6 +16,17 @@ namespace OpenProject.Shared
     // Further, it will instruct the browser to visit that URL.
     public const string INSTANCE_SELECTED = "InstanceSelected";
 
+    /// <summary>
+    /// This is sent to the backend by the landing page to trigger the validation
+    /// of an OpenProject url
+    /// </summary>
+    public const string VALIDATE_INSTANCE = "ValidateInstance";
+
+    /// <summary>
+    /// This is sent to the frontend in response to a instance url validation request
+    /// </summary>
+    public const string VALIDATED_INSTANCE= "ValidatedInstance";
+
     // This is used from the landing page to add a URL to the white list. It will not 
     public const string ADD_INSTANCE = "AddInstance";
 

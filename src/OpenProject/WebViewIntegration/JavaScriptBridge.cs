@@ -2,7 +2,7 @@
 using CefSharp.Wpf;
 using Newtonsoft.Json;
 using OpenProject.Shared;
-using System.Security.Policy;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace OpenProject.WebViewIntegration
@@ -91,6 +91,10 @@ namespace OpenProject.WebViewIntegration
       {
         OnAppForegroundRequestReceived?.Invoke(this);
       }
+      else if (messageType == MessageTypes.VALIDATE_INSTANCE)
+      {
+        Task.Run(async () => await ValidateInstanceAsync(trackingId, messagePayload));
+      }
       else
       {
         var eventArgs = new WebUIMessageEventArgs(messageType, trackingId, messagePayload);
@@ -159,6 +163,22 @@ namespace OpenProject.WebViewIntegration
     {
       ConfigurationHandler.SaveSelectedInstance(instanceName);
       VisitUrl(instanceName);
+    }
+
+    private async Task ValidateInstanceAsync(string trackingId, string message)
+    {
+      var instanceValidationResult = await OpenProjectInstanceValidator
+        .IsValidOpenProjectInstanceAsync(message);
+
+      var frontendResult = new
+      {
+        instanceValidationResult.isValid,
+        instanceValidationResult.instanceBaseUrl
+      };
+
+      SendMessageToOpenProject(MessageTypes.VALIDATED_INSTANCE,
+        trackingId,
+        JsonConvert.SerializeObject(frontendResult));
     }
   }
 }
