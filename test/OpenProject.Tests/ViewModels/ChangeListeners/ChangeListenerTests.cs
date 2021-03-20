@@ -1,5 +1,4 @@
-﻿using OpenProject.Bcf;
-using OpenProject.Shared.ViewModels.Bcf;
+﻿using OpenProject.Shared.ViewModels.Bcf;
 using OpenProject.Shared.ViewModels.ChangeListeners;
 using System.Linq;
 using Xunit;
