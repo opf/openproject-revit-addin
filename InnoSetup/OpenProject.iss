@@ -36,7 +36,7 @@ OutputBaseFilename=OpenProject.Revit
 SetupIconFile={#Repository}\Assets\openproject.ico
 Compression=lzma
 SolidCompression=yes
-WizardImageFile={#Repository}\Assets\bcfier-banner.bmp
+WizardImageFile={#Repository}\Assets\openproject-bim-banner.png
 ChangesAssociations=yes
 
 [Languages]
