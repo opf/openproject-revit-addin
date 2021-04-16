@@ -8,7 +8,11 @@ The _OpenProject Revit Add-In_ allows you to use the open source project managem
 
 This program originally based on the excellent [BCFier](https://github.com/teocomi/bcfier) but then moved into a new direction.
 
-### License
+## Installation
+
+Please follow the [installation instructions](docs/installation-instructions.md).
+
+## License
 GNU General Public License v3 Extended
 This program uses the GNU General Public License v3, extended to support the use of BCFier as Plugin of the non-free main software Autodesk Revit.
 See <http://www.gnu.org/licenses/gpl-faq.en.html#GPLPluginsInNF>.
