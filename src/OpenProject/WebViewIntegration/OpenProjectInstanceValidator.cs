@@ -65,21 +65,21 @@ namespace OpenProject.WebViewIntegration
     private static string GetInstanceUrl(string instanceNameOrUrl)
     {
       const string apiPathSuffix = "/api/v3";
-      bool hasApiSuffix = instanceNameOrUrl.TrimEnd('/').EndsWith(apiPathSuffix, StringComparison.InvariantCultureIgnoreCase);
+      var hasApiSuffix = instanceNameOrUrl.TrimEnd('/').EndsWith(apiPathSuffix, StringComparison.InvariantCultureIgnoreCase);
 
       string appendSuffix(string uri)
       {
-        string suffix = hasApiSuffix ? "" : apiPathSuffix;
+        var suffix = hasApiSuffix ? "" : apiPathSuffix;
         return uri + suffix;
       }
 
-      if (Uri.TryCreate(instanceNameOrUrl, UriKind.Absolute, out Uri instanceUri)
+      if (Uri.TryCreate(instanceNameOrUrl, UriKind.Absolute, out var instanceUri)
         && Regex.IsMatch(instanceUri.Scheme, "^https?$"))
       {
         return appendSuffix(instanceUri.AbsoluteUri.TrimEnd('/'));
       }
 
-      string subDomainRegexPattern = "^[a-zA-Z0-9-]+$";
+      var subDomainRegexPattern = "^[a-zA-Z0-9-]+$";
       if (Regex.IsMatch(instanceNameOrUrl, subDomainRegexPattern))
       {
         return $"https://{instanceNameOrUrl}.openproject.com{apiPathSuffix}";
