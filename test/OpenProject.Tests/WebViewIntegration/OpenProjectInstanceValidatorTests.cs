@@ -15,8 +15,8 @@ namespace OpenProject.Tests.WebViewIntegration
       [InlineData("https://wieland.openproject.com/api/v3", "https://wieland.openproject.com")]
       [InlineData("https://community.openproject.org/api/v3/", "https://community.openproject.org")]
       [InlineData("https://wieland.openproject.com/api/v3/", "https://wieland.openproject.com")]
-      [InlineData("https://community.openproject.org:443/api/v3", "https://community.openproject.org:443")]
-      [InlineData("https://wieland.openproject.com:443/api/v3", "https://wieland.openproject.com:443")]
+      [InlineData("https://community.openproject.org:443/api/v3", "https://community.openproject.org")]
+      [InlineData("https://wieland.openproject.com:443/api/v3", "https://wieland.openproject.com")]
       public async Task ReturnsTrueForActualInstances(string instanceUrl, string expectedBaseUrl)
       {
         var actual = await OpenProjectInstanceValidator.IsValidOpenProjectInstanceAsync(instanceUrl);
@@ -51,12 +51,35 @@ namespace OpenProject.Tests.WebViewIntegration
       [InlineData("wieland.openproject.com/", "https://wieland.openproject.com")]
       [InlineData("community.openproject.org", "https://community.openproject.org")]
       [InlineData("wieland.openproject.com", "https://wieland.openproject.com")]
-      [InlineData("community.openproject.org:443", "https://community.openproject.org:443")]
+      [InlineData("community.openproject.org:443", "https://community.openproject.org")]
       public async Task ReturnsTrueForJustTheUrlWithoutProtocol_WithoutApiPath(string instanceUrl, string expectedBaseUrl)
       {
         var actual = await OpenProjectInstanceValidator.IsValidOpenProjectInstanceAsync(instanceUrl);
         Assert.True(actual.isValid);
         Assert.Equal(expectedBaseUrl, actual.instanceBaseUrl);
+      }
+
+      [Theory]
+      [InlineData("https://community.openproject.org/", "https://community.openproject.org")]
+      [InlineData("https://wieland.openproject.com/", "https://wieland.openproject.com")]
+      [InlineData("https://community.openproject.org", "https://community.openproject.org")]
+      [InlineData("https://wieland.openproject.com", "https://wieland.openproject.com")]
+      [InlineData("https://community.openproject.org:443", "https://community.openproject.org")]
+      public async Task ReturnsTrueForJustTheUrlWithProtocol_WithoutApiPath(string instanceUrl, string expectedBaseUrl)
+      {
+        var actual = await OpenProjectInstanceValidator.IsValidOpenProjectInstanceAsync(instanceUrl);
+        Assert.True(actual.isValid);
+        Assert.Equal(expectedBaseUrl, actual.instanceBaseUrl);
+      }
+
+      [Theory]
+      [InlineData("file:///some/strange/human/providing/strange/urls.txt")]
+      [InlineData("wss://javascript.info")]
+      public async Task ReturnsFalseForUrlWithoutHttoScheme(string instanceUrl)
+      {
+        var actual = await OpenProjectInstanceValidator.IsValidOpenProjectInstanceAsync(instanceUrl);
+        Assert.False(actual.isValid);
+        Assert.Null(actual.instanceBaseUrl);
       }
 
       [Theory]

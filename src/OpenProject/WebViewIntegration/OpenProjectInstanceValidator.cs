@@ -64,26 +64,30 @@ namespace OpenProject.WebViewIntegration
 
     private static string GetInstanceUrl(string instanceNameOrUrl)
     {
-      if (Uri.TryCreate(instanceNameOrUrl, UriKind.Absolute, out var _)
-        && Regex.IsMatch(instanceNameOrUrl.ToLower(), "^https?://"))
+      const string apiPathSuffix = "/api/v3";
+      var hasApiSuffix = instanceNameOrUrl.TrimEnd('/').EndsWith(apiPathSuffix, StringComparison.InvariantCultureIgnoreCase);
+
+      string appendSuffix(string uri)
       {
-        return instanceNameOrUrl;
+        var suffix = hasApiSuffix ? "" : apiPathSuffix;
+        return uri + suffix;
+      }
+
+      if (Uri.TryCreate(instanceNameOrUrl, UriKind.Absolute, out var instanceUri)
+        && Regex.IsMatch(instanceUri.Scheme, "^https?$"))
+      {
+        return appendSuffix(instanceUri.AbsoluteUri.TrimEnd('/'));
       }
 
       var subDomainRegexPattern = "^[a-zA-Z0-9-]+$";
       if (Regex.IsMatch(instanceNameOrUrl, subDomainRegexPattern))
       {
-        return $"https://{instanceNameOrUrl}.openproject.com/api/v3";
+        return $"https://{instanceNameOrUrl}.openproject.com{apiPathSuffix}";
       }
 
-      if (Uri.TryCreate($"https://{instanceNameOrUrl}", UriKind.Absolute, out var instanceUri))
+      if (Uri.TryCreate($"https://{instanceNameOrUrl}", UriKind.Absolute, out instanceUri))
       {
-        if (!instanceUri.PathAndQuery.TrimEnd('/').EndsWith("/api/v3", StringComparison.InvariantCultureIgnoreCase))
-        {
-          return $"https://{instanceNameOrUrl.TrimEnd('/')}/api/v3";
-        }
-
-        return $"https://{instanceNameOrUrl}";
+        return appendSuffix(instanceUri.AbsoluteUri.TrimEnd('/'));
       }
 
       return null;
