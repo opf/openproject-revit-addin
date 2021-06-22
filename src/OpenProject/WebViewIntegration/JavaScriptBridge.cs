@@ -1,7 +1,10 @@
 ﻿using CefSharp;
 using CefSharp.Wpf;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using OpenProject.Shared;
+using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -17,10 +20,14 @@ namespace OpenProject.WebViewIntegration
 
     public const string REVIT_READY_EVENT_NAME = "revit.plugin.ready";
 
+    private readonly IServiceProvider _serviceProvider;
+
     private JavaScriptBridge()
     {
       // This class should only be available as a singleton, access
       // via the static 'Instance' property.
+
+      _serviceProvider = InitializeIoCContainer();
     }
 
     private ChromiumWebBrowser _webBrowser;
@@ -33,6 +40,26 @@ namespace OpenProject.WebViewIntegration
     public event AppForegroundRequestReceivedEventHandler OnAppForegroundRequestReceived;
 
     public delegate void AppForegroundRequestReceivedEventHandler(object sender);
+
+    private static IServiceProvider InitializeIoCContainer()
+    {
+      var services = new ServiceCollection();
+      services.AddTransient<OpenProjectInstanceValidator>();
+
+      // We're using HttpClientFactory to ensure that we don't hit any problems with
+      // port exhaustion or stale DNS entries in long-lived HttpClients
+      services.AddHttpClient(nameof(OpenProjectInstanceValidator))
+        .ConfigureHttpMessageHandlerBuilder(h =>
+        {
+          if (h.PrimaryHandler is HttpClientHandler httpClientHandler)
+          {
+            // It defaults to true, but let's ensure it stays that way
+            httpClientHandler.AllowAutoRedirect = true;
+          }
+        })
+        ;
+      return services.BuildServiceProvider();
+    }
 
     private void ChangeLoadingState(object sender, object eventArgs)
     {
@@ -167,8 +194,9 @@ namespace OpenProject.WebViewIntegration
 
     private async Task ValidateInstanceAsync(string trackingId, string message)
     {
-      var instanceValidationResult = await OpenProjectInstanceValidator
-        .IsValidOpenProjectInstanceAsync(message);
+      var validator = _serviceProvider.GetService<OpenProjectInstanceValidator>();
+
+      var instanceValidationResult = await validator.IsValidOpenProjectInstanceAsync(message);
 
       var frontendResult = new
       {

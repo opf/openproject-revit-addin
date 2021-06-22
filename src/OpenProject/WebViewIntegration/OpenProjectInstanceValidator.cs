@@ -8,29 +8,16 @@ using System.Threading.Tasks;
 
 namespace OpenProject.WebViewIntegration
 {
-  public static class OpenProjectInstanceValidator
+  public class OpenProjectInstanceValidator
   {
-    private static readonly IServiceProvider _services;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    static OpenProjectInstanceValidator()
+    public OpenProjectInstanceValidator(IHttpClientFactory httpClientFactory)
     {
-      // We're using HttpClientFactory to ensure that we don't hit any problems with
-      // port exhaustion or stale DNS entries in long-lived HttpClients
-      var serviceCollection = new ServiceCollection();
-      serviceCollection.AddHttpClient(nameof(OpenProjectInstanceValidator))
-        .ConfigureHttpMessageHandlerBuilder(h =>
-        {
-          if (h.PrimaryHandler is HttpClientHandler httpClientHandler)
-          {
-            // It defaults to true, but let's ensure it stays that way😀
-            httpClientHandler.AllowAutoRedirect = true;
-          }
-        })
-        ;
-      _services = serviceCollection.BuildServiceProvider();
+      _httpClientFactory = httpClientFactory;
     }
 
-    public static async Task<(bool isValid, string instanceBaseUrl)> IsValidOpenProjectInstanceAsync(string instanceNameOrUrl)
+    public async Task<(bool isValid, string instanceBaseUrl)> IsValidOpenProjectInstanceAsync(string instanceNameOrUrl)
     {
       var instanceUrl = GetInstanceUrl(instanceNameOrUrl);
       if (string.IsNullOrWhiteSpace(instanceUrl))
@@ -93,11 +80,9 @@ namespace OpenProject.WebViewIntegration
       return null;
     }
 
-    private static async Task<HttpResponseMessage> GetHttpResponseAsync(string instanceUrl)
+    private async Task<HttpResponseMessage> GetHttpResponseAsync(string instanceUrl)
     {
-      using var httpClient = _services
-        .GetRequiredService<IHttpClientFactory>()
-        .CreateClient(nameof(OpenProjectInstanceValidator));
+      using var httpClient = _httpClientFactory.CreateClient(nameof(OpenProjectInstanceValidator));
       try
       {
         var response = await httpClient.GetAsync(instanceUrl);

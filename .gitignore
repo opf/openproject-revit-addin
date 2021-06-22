@@ -194,6 +194,9 @@ FakesAssemblies/
 # Visual Studio 6 workspace options file
 *.opt
 
+# JetBrains IDE configuration files
+.idea/
+
 output/
 
 Bcfier/WebViewIntegration/LandingPage/LandingPage.zip
