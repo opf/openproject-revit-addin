@@ -130,7 +130,7 @@ namespace OpenProject.Revit.Entry
           orthoView = activeView3D;
       }
 
-        //try to use an existing 3D view
+      //try to use an existing 3D view
       orthoView ??= Get3dViews(doc).FirstOrDefault(o => o.Name is "{3D}" or "BCFortho");
 
       using (var trans = new Transaction(uidoc.Document))
