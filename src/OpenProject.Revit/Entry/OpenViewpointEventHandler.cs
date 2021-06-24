@@ -130,13 +130,8 @@ namespace OpenProject.Revit.Entry
           orthoView = activeView3D;
       }
 
-      if (orthoView == null)
-      {
         //try to use an existing 3D view
-        IEnumerable<View3D> viewcollector3D = Get3dViews(doc);
-        if (viewcollector3D.Any(o => o.Name == "{3D}" || o.Name == "BCFortho"))
-          orthoView = viewcollector3D.First(o => o.Name == "{3D}" || o.Name == "BCFortho");
-      }
+      orthoView ??= Get3dViews(doc).FirstOrDefault(o => o.Name is "{3D}" or "BCFortho");
 
       using (var trans = new Transaction(uidoc.Document))
       {
@@ -192,45 +187,42 @@ namespace OpenProject.Revit.Entry
         perspectiveCamera.Camera_view_point.Z);
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, false);
 
-      View3D perspView = null;
       //try to use an existing 3D view
-      var viewcollector3D = Get3dViews(doc);
-      if (viewcollector3D.Any(o => o.Name == "BCFpersp"))
-        perspView = viewcollector3D.First(o => o.Name == "BCFpersp");
+      var perspectiveView = Get3dViews(doc).FirstOrDefault(o => o.Name == "BCFpersp");
 
       using (var trans = new Transaction(uidoc.Document))
       {
         if (trans.Start("Open perspective view") == TransactionStatus.Started)
         {
-          if (null == perspView)
+          if (perspectiveView == null)
           {
-            perspView = View3D.CreatePerspective(doc, GetFamilyViews(doc).First().Id);
-            perspView.Name = "BCFpersp";
+            perspectiveView = View3D.CreatePerspective(doc, GetFamilyViews(doc).First().Id);
+            perspectiveView.Name = "BCFpersp";
           }
           else
           {
             //reusing an existing view, I net to reset the visibility
             //placed this here because if set afterwards it doesn't work
-            perspView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+            perspectiveView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
           }
 
-          perspView.SetOrientation(orient3D);
+          perspectiveView.SetOrientation(orient3D);
 
           // turn off the far clip plane
-          if (perspView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR).HasValue)
+          if (perspectiveView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR).HasValue)
           {
-            Parameter m_farClip = perspView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR);
-            m_farClip.Set(0);
+            var farClip = perspectiveView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR);
+            farClip.Set(0);
           }
 
-          perspView.CropBoxActive = false;
-          perspView.CropBoxVisible = false;
+          perspectiveView.CropBoxActive = false;
+          perspectiveView.CropBoxVisible = false;
 
           trans.Commit();
         }
       }
 
-      uidoc.ActiveView = perspView;
+      uidoc.ActiveView = perspectiveView;
     }
 
     private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document document, UIDocument uiDocument)
@@ -260,9 +252,7 @@ namespace OpenProject.Revit.Entry
       }
 
       if (bcfViewpoint.Components?.Visibility == null)
-      {
         return;
-      }
 
       var visibleRevitElements = new FilteredElementCollector(document, document.ActiveView.Id)
         .WhereElementIsNotElementType()
@@ -349,9 +339,8 @@ namespace OpenProject.Revit.Entry
       if (clippingPlanes == null || !clippingPlanes.Any() || uiDocument.ActiveView is not View3D view3d)
         return;
 
-      var boxes = clippingPlanes
-        .Select(p => p.ToAxisAlignedBoundingBox(_viewpointAngleThresholdRad));
-      var boundingBox = boxes
+      var boundingBox = clippingPlanes
+        .Select(p => p.ToAxisAlignedBoundingBox(_viewpointAngleThresholdRad))
         .Aggregate(AxisAlignedBoundingBox.Infinite, (current, nextBox) => current.MergeReduce(nextBox));
 
       using var trans = new Transaction(uiDocument.Document);
