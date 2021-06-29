@@ -114,9 +114,9 @@ namespace OpenProject.Revit.Entry
           return;
         }
 
-        OpenViewpointEventHandler.ShowBcfViewpoint(_uiapp, bcfViewpoint);
+        OpenViewpointEventHandler.ShowBcfViewpoint(bcfViewpoint);
       }
-      catch (System.Exception ex1)
+      catch (Exception ex1)
       {
         TaskDialog.Show("Error opening a View!", "exception: " + ex1);
       }

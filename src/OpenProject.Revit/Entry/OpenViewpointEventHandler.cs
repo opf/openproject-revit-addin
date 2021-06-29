@@ -8,7 +8,7 @@ using OpenProject.Shared.ViewModels.Bcf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
+using OpenProject.Shared.Math3D;
 
 namespace OpenProject.Revit.Entry
 {
@@ -17,16 +17,15 @@ namespace OpenProject.Revit.Entry
   /// </summary>
   public class OpenViewpointEventHandler : IExternalEventHandler
   {
-    /// <summary>
-    /// This is the method declared in the <see cref="IExternalEventHandler"/> interface
-    /// provided by the Revit API
-    /// </summary>
-    /// <param name="app"></param>
+    private const decimal _viewpointAngleThresholdRad = 0.087266462599716m;
+
+    /// <inheritdoc />
     public void Execute(UIApplication app)
     {
       ShowBcfViewpointInternal(app);
     }
 
+    /// <inheritdoc />
     public string GetName() => nameof(OpenViewpointEventHandler);
 
     private BcfViewpointViewModel _bcfViewpoint;
@@ -37,11 +36,10 @@ namespace OpenProject.Revit.Entry
     {
       get
       {
-        if (_instance == null)
-        {
-          _instance = new OpenViewpointEventHandler();
-          ExternalEvent = ExternalEvent.Create(_instance);
-        }
+        if (_instance != null) return _instance;
+
+        _instance = new OpenViewpointEventHandler();
+        ExternalEvent = ExternalEvent.Create(_instance);
 
         return _instance;
       }
@@ -50,10 +48,11 @@ namespace OpenProject.Revit.Entry
     private static ExternalEvent ExternalEvent { get; set; }
 
     /// <summary>
-    /// External Event Implementation
+    /// Wraps the raising of the external event and thus the execution of the event callback,
+    /// that show given bcf viewpoint.
     /// </summary>
-    /// <param name="app"></param>
-    public static void ShowBcfViewpoint(UIApplication app, BcfViewpointViewModel bcfViewpoint)
+    /// <param name="bcfViewpoint">The bcf viewpoint to be shown in current view.</param>
+    public static void ShowBcfViewpoint(BcfViewpointViewModel bcfViewpoint)
     {
       Instance._bcfViewpoint = bcfViewpoint;
       ExternalEvent.Raise();
@@ -63,40 +62,18 @@ namespace OpenProject.Revit.Entry
     {
       try
       {
-        UIDocument uidoc = app.ActiveUIDocument;
-        Document doc = uidoc.Document;
+        var uiDoc = app.ActiveUIDocument;
+        var doc = uiDoc.Document;
 
-        // IS ORTHOGONAL
         if (_bcfViewpoint.Viewpoint?.Orthogonal_camera != null)
-        {
-          ShowOrthogonalView(_bcfViewpoint, doc, uidoc, app);
-        }
-        //perspective
+          ShowOrthogonalView(_bcfViewpoint, doc, uiDoc, app);
         else if (_bcfViewpoint.Viewpoint?.Perspective_camera != null)
-        {
-          ShowPerspectiveView(_bcfViewpoint, doc, uidoc);
-        }
+          ShowPerspectiveView(_bcfViewpoint, doc, uiDoc);
         else
-        {
-          //no view included
           return;
-        }
 
-        ApplyElementStyles(_bcfViewpoint, doc, uidoc);
-
-        if (!ApplyClippingPlanes(_bcfViewpoint, uidoc)
-          && uidoc.ActiveView is View3D view3d)
-        {
-          using (var trans = new Transaction(uidoc.Document))
-          {
-            if (trans.Start("Disable section box") == TransactionStatus.Started)
-            {
-              view3d.IsSectionBoxActive = false;
-            }
-
-            trans.Commit();
-          }
-        }
+        ApplyElementStyles(_bcfViewpoint, doc, uiDoc);
+        ApplyClippingPlanes(_bcfViewpoint, uiDoc);
 
         // The local callback first needs to be initialized to null since it's
         // referencing itself in its body.
@@ -104,15 +81,14 @@ namespace OpenProject.Revit.Entry
         // and prepare everything. After that, we're waiting for the 'Idle' event
         // and instruct Revit to refresh and redraw the view. Otherwise, component
         // selection seemed not to work properly.
-        EventHandler<IdlingEventArgs> afterIdleEventHandler = null;
-        afterIdleEventHandler = (_, _) =>
+        void AfterIdleEventHandler(object o, IdlingEventArgs idlingEventArgs)
         {
-          uidoc.RefreshActiveView();
+          uiDoc.RefreshActiveView();
           app.ActiveUIDocument.UpdateAllOpenViews();
-          app.Idling -= afterIdleEventHandler;
-        };
+          app.Idling -= AfterIdleEventHandler;
+        }
 
-        app.Idling += afterIdleEventHandler;
+        app.Idling += AfterIdleEventHandler;
       }
       catch (Exception ex)
       {
@@ -120,7 +96,8 @@ namespace OpenProject.Revit.Entry
       }
     }
 
-    private void ShowOrthogonalView(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc, UIApplication app)
+    private static void ShowOrthogonalView(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc,
+      UIApplication app)
     {
       var orthogonalCamera = bcfViewpoint.Viewpoint?.Orthogonal_camera;
       if (orthogonalCamera == null)
@@ -152,13 +129,10 @@ namespace OpenProject.Revit.Entry
         if (!activeView3D.IsPerspective)
           orthoView = activeView3D;
       }
-      if (orthoView == null)
-      {
-        //try to use an existing 3D view
-        IEnumerable<View3D> viewcollector3D = Get3dViews(doc);
-        if (viewcollector3D.Any(o => o.Name == "{3D}" || o.Name == "BCFortho"))
-          orthoView = viewcollector3D.First(o => o.Name == "{3D}" || o.Name == "BCFortho");
-      }
+
+      //try to use an existing 3D view
+      orthoView ??= Get3dViews(doc).FirstOrDefault(o => o.Name is "{3D}" or "BCFortho");
+
       using (var trans = new Transaction(uidoc.Document))
       {
         if (trans.Start("Open orthogonal view") == TransactionStatus.Started)
@@ -172,10 +146,12 @@ namespace OpenProject.Revit.Entry
           {
             orthoView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
           }
+
           orthoView.SetOrientation(orient3D);
           trans.Commit();
         }
       }
+
       uidoc.ActiveView = orthoView;
 
       var viewChangedZoomListener = new ActiveViewChangedZoomListener(orthoView.Id.IntegerValue, zoom, app);
@@ -211,44 +187,42 @@ namespace OpenProject.Revit.Entry
         perspectiveCamera.Camera_view_point.Z);
       var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, false);
 
-      View3D perspView = null;
       //try to use an existing 3D view
-      IEnumerable<View3D> viewcollector3D = Get3dViews(doc);
-      if (viewcollector3D.Any(o => o.Name == "BCFpersp"))
-        perspView = viewcollector3D.First(o => o.Name == "BCFpersp");
+      var perspectiveView = Get3dViews(doc).FirstOrDefault(o => o.Name == "BCFpersp");
 
       using (var trans = new Transaction(uidoc.Document))
       {
         if (trans.Start("Open perspective view") == TransactionStatus.Started)
         {
-          if (null == perspView)
+          if (perspectiveView == null)
           {
-            perspView = View3D.CreatePerspective(doc, GetFamilyViews(doc).First().Id);
-            perspView.Name = "BCFpersp";
+            perspectiveView = View3D.CreatePerspective(doc, GetFamilyViews(doc).First().Id);
+            perspectiveView.Name = "BCFpersp";
           }
           else
           {
             //reusing an existing view, I net to reset the visibility
             //placed this here because if set afterwards it doesn't work
-            perspView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+            perspectiveView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
           }
 
-          perspView.SetOrientation(orient3D);
+          perspectiveView.SetOrientation(orient3D);
 
           // turn off the far clip plane
-          if (perspView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR).HasValue)
+          if (perspectiveView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR).HasValue)
           {
-            Parameter m_farClip = perspView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR);
-            m_farClip.Set(0);
+            var farClip = perspectiveView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR);
+            farClip.Set(0);
           }
-          perspView.CropBoxActive = false;
-          perspView.CropBoxVisible = false;
+
+          perspectiveView.CropBoxActive = false;
+          perspectiveView.CropBoxVisible = false;
 
           trans.Commit();
         }
       }
 
-      uidoc.ActiveView = perspView;
+      uidoc.ActiveView = perspectiveView;
     }
 
     private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document document, UIDocument uiDocument)
@@ -273,13 +247,12 @@ namespace OpenProject.Revit.Entry
             document.ActiveView.UnhideElements(hiddenRevitElements);
           }
         }
+
         trans.Commit();
       }
 
       if (bcfViewpoint.Components?.Visibility == null)
-      {
         return;
-      }
 
       var visibleRevitElements = new FilteredElementCollector(document, document.ActiveView.Id)
         .WhereElementIsNotElementType()
@@ -354,147 +327,67 @@ namespace OpenProject.Revit.Entry
             }
           }
         }
+
         trans.Commit();
       }
     }
 
-    private static bool ApplyClippingPlanes(BcfViewpointViewModel bcfViewpoint,
-      UIDocument uiDocument)
+    private static void ApplyClippingPlanes(BcfViewpointViewModel bcfViewpoint, UIDocument uiDocument)
     {
-      if (!(bcfViewpoint.Viewpoint?.Clipping_planes?.Any() ?? false)
-        || !(uiDocument.ActiveView is View3D view3d))
-      {
-        return false;
-      }
+      var clippingPlanes = bcfViewpoint.Viewpoint?.Clipping_planes;
 
-      // We need exactly 6 clipping planes to create a section box in Revit,
-      // since 6 planes form a cuboid to enclose the visible space
-      var clippingPlanes = bcfViewpoint.Viewpoint.Clipping_planes;
-      if (clippingPlanes.Count != 6)
-      {
-        return false;
-      }
+      if (clippingPlanes == null || !clippingPlanes.Any() || uiDocument.ActiveView is not View3D view3d)
+        return;
 
-      // Now we need to get all the combinations of the planes to get the 8 intersection points
-      var numericsPlanes = clippingPlanes
-        .Select(cp =>
-        {
-          var numericsPlane = new System.Numerics.Plane();
-          numericsPlane.Normal = Vector3.Normalize(new Vector3(cp.Direction.X,
-            cp.Direction.Y,
-            cp.Direction.Z));
+      var boundingBox = clippingPlanes
+        .Select(p => p.ToAxisAlignedBoundingBox(_viewpointAngleThresholdRad))
+        .Aggregate(AxisAlignedBoundingBox.Infinite, (current, nextBox) => current.MergeReduce(nextBox));
 
-          var locationX = cp.Location.X.ToInternalRevitUnit();
-          var locationY = cp.Location.Y.ToInternalRevitUnit();
-          var locationZ = cp.Location.Z.ToInternalRevitUnit();
-
-          // See here for how to transform a plane via (location, normal)
-          // to (distance to origin, normal)
-          // https://stackoverflow.com/a/3863777/4190785
-          // We're using 0,0,0 as the origin here to stay consistent with our export.
-          // Also, other application will likely not use the Revit-specific project zero point
-          // but just 0,0,0 in world coordinates
-          var deltaVector = Vector3.Subtract(new Vector3(0, 0, 0), new Vector3(locationX,
-            locationY,
-            locationZ));
-          var distanceToOrigin = Vector3.Dot(numericsPlane.Normal, deltaVector);
-          numericsPlane.D = Convert.ToSingle(distanceToOrigin);
-          return numericsPlane;
-        })
-        .ToList();
-
-      // We're getting 120 combinations for the planes here
-      var combinations = (from p0 in numericsPlanes
-                          from p1 in numericsPlanes.Where(rp => rp != p0)
-                          from p2 in numericsPlanes.Where(rp => rp != p0 && rp != p1)
-                          where p0 != p1 && p1 != p2
-                          select new { p0, p1, p2 })
-                         .ToList();
-
-      var intersectionPoints = new List<Vector3>();
-      foreach (var combination in combinations)
-      {
-        if (PlanesHaveSingleIntersectionPoint(combination.p0,
-          combination.p1,
-          combination.p2,
-          out var intersectionPoint)
-          && !intersectionPoints.Any(ip => ip.X == intersectionPoint.X
-            && ip.Y == intersectionPoint.Y
-            && ip.Z == intersectionPoint.Z))
-        {
-          intersectionPoints.Add(intersectionPoint);
-        }
-      }
-
-      // We should have 8 intersection points left for the 8 corners of the cuboid that
-      // represents the bounding box
-      if (intersectionPoints.Count != 8)
-      {
-        return false;
-      }
-
-      // Now we need to get the min and max - basically, two corners opposite to eachother between
-      // which the bounding box is spanned. Everything outside of this cuboid is cut off and hidden
-      // by the bounding box
-      var boundingBox = new BoundingBoxXYZ();
-      boundingBox.Max = new XYZ(
-        x: intersectionPoints.Max(ip => ip.X),
-        y: intersectionPoints.Max(ip => ip.Y),
-        z: intersectionPoints.Max(ip => ip.Z));
-      boundingBox.Min = new XYZ(
-        x: intersectionPoints.Min(ip => ip.X),
-        y: intersectionPoints.Min(ip => ip.Y),
-        z: intersectionPoints.Min(ip => ip.Z));
-
-      using (var trans = new Transaction(uiDocument.Document))
+      using var trans = new Transaction(uiDocument.Document);
+      if (!boundingBox.Equals(AxisAlignedBoundingBox.Infinite))
       {
         if (trans.Start("Apply BCF section box") == TransactionStatus.Started)
         {
-          view3d.SetSectionBox(boundingBox);
+          view3d.SetSectionBox(ToRevitSectionBox(boundingBox));
           view3d.IsSectionBoxActive = true;
         }
-
-        trans.Commit();
-        return true;
       }
+      else
+      {
+        if (trans.Start("Disable section box") == TransactionStatus.Started)
+          view3d.IsSectionBoxActive = false;
+      }
+
+      trans.Commit();
     }
 
-    // Taken from https://gist.github.com/StagPoint/2eaa878f151555f9f96ae7190f80352e
-    private static bool PlanesHaveSingleIntersectionPoint(System.Numerics.Plane p0,
-      System.Numerics.Plane p1,
-      System.Numerics.Plane p2,
-      out Vector3 intersectionPoint)
+    private static BoundingBoxXYZ ToRevitSectionBox(AxisAlignedBoundingBox box)
     {
-      const float EPSILON = 1e-4f;
+      var min = new XYZ(
+        box.Min.X == decimal.MinValue ? double.MinValue : ((double) box.Min.X).ToInternalRevitUnit(),
+        box.Min.Y == decimal.MinValue ? double.MinValue : ((double) box.Min.Y).ToInternalRevitUnit(),
+        box.Min.Z == decimal.MinValue ? double.MinValue : ((double) box.Min.Z).ToInternalRevitUnit());
+      var max = new XYZ(
+        box.Max.X == decimal.MaxValue ? double.MaxValue : ((double) box.Max.X).ToInternalRevitUnit(),
+        box.Max.Y == decimal.MaxValue ? double.MaxValue : ((double) box.Max.Y).ToInternalRevitUnit(),
+        box.Max.Z == decimal.MaxValue ? double.MaxValue : ((double) box.Max.Z).ToInternalRevitUnit());
 
-      var det = Vector3.Dot(Vector3.Cross(p0.Normal, p1.Normal), p2.Normal);
-      if (det < EPSILON)
-      {
-        intersectionPoint = Vector3.Zero;
-        return false;
-      }
-
-      intersectionPoint =
-        (-(p0.D * Vector3.Cross(p1.Normal, p2.Normal)) -
-        (p1.D * Vector3.Cross(p2.Normal, p0.Normal)) -
-        (p2.D * Vector3.Cross(p0.Normal, p1.Normal))) / det;
-
-      return true;
+      return new BoundingBoxXYZ { Min = min, Max = max };
     }
 
     private static IEnumerable<ViewFamilyType> GetFamilyViews(Document doc)
     {
       return from elem in new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType))
-             let type = elem as ViewFamilyType
-             where type.ViewFamily == ViewFamily.ThreeDimensional
-             select type;
+        let type = elem as ViewFamilyType
+        where type.ViewFamily == ViewFamily.ThreeDimensional
+        select type;
     }
 
     private static IEnumerable<View3D> Get3dViews(Document doc)
     {
       return from elem in new FilteredElementCollector(doc).OfClass(typeof(View3D))
-             let view = elem as View3D
-             select view;
+        let view = elem as View3D
+        select view;
     }
   }
 }

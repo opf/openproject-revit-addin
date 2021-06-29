@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Dangl.Common" Version="1.5.0" />
+    <PackageReference Include="DecimalMath.DecimalEx" Version="1.0.2" />
     <PackageReference Include="iabi.BCF" Version="1.2.7" />
 	  <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
 	  <PackageReference Include="Config.Net" Version="4.15.0" />
