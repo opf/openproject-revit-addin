@@ -10,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using ZetaIpc.Runtime.Client;
 using ZetaIpc.Runtime.Server;
@@ -20,24 +19,23 @@ namespace OpenProject.Revit.Entry
 {
   public class BcfierIpcHandler
   {
-    private readonly UIApplication _uiapp;
+    private readonly UIApplication _uiApp;
     private Action<string> _sendData;
-    private static readonly object _callbackStackLock = new object();
-    private static readonly Stack<Action> _callbackStack = new Stack<Action>();
+    private static readonly object _callbackStackLock = new();
+    private static readonly Stack<Action> _callbackStack = new();
 
-    public BcfierIpcHandler(UIApplication uiapp)
+    public BcfierIpcHandler(UIApplication uiApp)
     {
-      _uiapp = uiapp ?? throw new ArgumentNullException(nameof(uiapp));
+      _uiApp = uiApp ?? throw new ArgumentNullException(nameof(uiApp));
 
-      uiapp.Idling += (s, e) =>
+      uiApp.Idling += (_, _) =>
       {
         lock (_callbackStackLock)
         {
-          if (_callbackStack.Any())
-          {
-            var action = _callbackStack.Pop();
-            action.Invoke();
-          }
+          if (!_callbackStack.Any()) return;
+
+          var action = _callbackStack.Pop();
+          action.Invoke();
         }
       };
     }
@@ -47,7 +45,7 @@ namespace OpenProject.Revit.Entry
       var freePort = FreePortHelper.GetFreePort();
       var server = new IpcServer();
       server.Start(freePort);
-      server.ReceivedRequest += (sender, e) =>
+      server.ReceivedRequest += (_, e) =>
       {
         var eventArgs = JsonConvert.DeserializeObject<WebUIMessageEventArgs>(e.Request);
         var localMessageType = eventArgs.MessageType;
@@ -55,14 +53,18 @@ namespace OpenProject.Revit.Entry
         var localMessagePayload = eventArgs.MessagePayload;
         _callbackStack.Push(() =>
         {
-          if (localMessageType == MessageTypes.VIEWPOINT_DATA)
+          switch (localMessageType)
           {
-            var bcfViewpoint = MessageDeserializer.DeserializeBcfViewpoint(new WebUIMessageEventArgs(localMessageType, localTrackingId, localMessagePayload));
-            OpenView(bcfViewpoint);
-          }
-          if (localMessageType == MessageTypes.VIEWPOINT_GENERATION_REQUESTED)
-          {
-            AddView(localTrackingId);
+            case MessageTypes.VIEWPOINT_DATA:
+            {
+              var bcfViewpoint = MessageDeserializer.DeserializeBcfViewpoint(
+                new WebUIMessageEventArgs(localMessageType, localTrackingId, localMessagePayload));
+              OpenView(bcfViewpoint);
+              break;
+            }
+            case MessageTypes.VIEWPOINT_GENERATION_REQUESTED:
+              AddView(localTrackingId);
+              break;
           }
         });
       };
@@ -74,7 +76,7 @@ namespace OpenProject.Revit.Entry
     {
       var client = new IpcClient();
       client.Initialize(bcfierWinServerPort);
-      _sendData = (message) =>
+      _sendData = message =>
       {
         try
         {
@@ -105,12 +107,12 @@ namespace OpenProject.Revit.Entry
     {
       try
       {
-        UIDocument uidoc = _uiapp.ActiveUIDocument;
+        var uiDoc = _uiApp.ActiveUIDocument;
 
-        if (uidoc.ActiveView.ViewType == ViewType.Schedule)
+        if (uiDoc.ActiveView.ViewType == ViewType.Schedule)
         {
           MessageBox.Show("BCFier can't take snapshots of schedules.",
-              "Warning!", MessageBoxButton.OK, MessageBoxImage.Warning);
+            "Warning!", MessageBoxButton.OK, MessageBoxImage.Warning);
           return;
         }
 
@@ -139,14 +141,20 @@ namespace OpenProject.Revit.Entry
     /// <summary>
     /// Same as in the windows app, but here we generate a VisInfo that is attached to the view
     /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
+    /// <param name="trackingId">The local message tracking id.</param>
     private void AddView(string trackingId)
     {
       try
       {
-        var generatedViewpoint = RevitView.GenerateViewpoint(_uiapp.ActiveUIDocument);
-        var snapshot = GetRevitSnapshot(_uiapp.ActiveUIDocument.Document);
+        if (_uiApp.ActiveUIDocument.ActiveView.ViewType != ViewType.ThreeD)
+        {
+          TaskDialog.Show("Invalid active UI document",
+            "To capture viewpoints the active document must be a 3D view.");
+          return;
+        }
+
+        var generatedViewpoint = RevitView.GenerateViewpoint(_uiApp.ActiveUIDocument);
+        var snapshot = GetRevitSnapshot(_uiApp.ActiveUIDocument.Document);
         var messageContent = new ViewpointGeneratedApiMessage
         {
           SnapshotPngBase64 = "data:image/png;base64," + ConvertToBase64(snapshot),
@@ -158,32 +166,34 @@ namespace OpenProject.Revit.Entry
           ContractResolver = new CamelCasePropertyNamesContractResolver()
         };
 
-        var jsonPayload = JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Viewpoint, serializerSettings));
+        var jsonPayload =
+          JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Viewpoint, serializerSettings));
         if (messageContent.Viewpoint.Components != null)
         {
-          jsonPayload["components"] = JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Components, serializerSettings));
+          jsonPayload["components"] =
+            JObject.Parse(JsonConvert.SerializeObject(messageContent.Viewpoint.Components, serializerSettings));
         }
+
         jsonPayload["snapshot"] = messageContent.SnapshotPngBase64;
-        //var payloadString = JsonConvert.SerializeObject(messageContent);
         var payloadString = jsonPayload.ToString();
 
         var eventArgs = new WebUIMessageEventArgs(MessageTypes.VIEWPOINT_GENERATED, trackingId, payloadString);
         var jsonEventArgs = JsonConvert.SerializeObject(eventArgs);
         _sendData(jsonEventArgs);
       }
-      catch (System.Exception ex1)
+      catch (Exception exception)
       {
-        TaskDialog.Show("Error adding a View!", "exception: " + ex1);
+        TaskDialog.Show("Error adding a View!", "exception: " + exception);
       }
     }
 
-    private Stream GetRevitSnapshot(Document doc)
+    private static Stream GetRevitSnapshot(Document doc)
     {
       try
       {
         var tempPath = Path.Combine(Path.GetTempPath(), "BCFier");
         Directory.CreateDirectory(tempPath);
-        string tempImg = Path.Combine(tempPath, Path.GetTempFileName() + ".png");
+        var tempImg = Path.Combine(tempPath, Path.GetTempFileName() + ".png");
         var options = new ImageExportOptions
         {
           FilePath = tempImg,
@@ -197,30 +207,28 @@ namespace OpenProject.Revit.Entry
         doc.ExportImage(options);
 
         var memStream = new MemoryStream();
-        using (var fs = System.IO.File.OpenRead(tempImg))
+        using (var fs = File.OpenRead(tempImg))
         {
           fs.CopyTo(memStream);
         }
+
         File.Delete(tempImg);
 
         memStream.Position = 0;
         return memStream;
       }
-      catch (System.Exception ex1)
+      catch (Exception exception)
       {
-        TaskDialog.Show("Error!", "exception: " + ex1);
+        TaskDialog.Show("Error!", "exception: " + exception);
         throw;
       }
     }
 
     private static string ConvertToBase64(Stream stream)
     {
-      byte[] bytes;
-      using (var memoryStream = new MemoryStream())
-      {
-        stream.CopyTo(memoryStream);
-        bytes = memoryStream.ToArray();
-      }
+      using var memoryStream = new MemoryStream();
+      stream.CopyTo(memoryStream);
+      var bytes = memoryStream.ToArray();
 
       return Convert.ToBase64String(bytes);
     }
