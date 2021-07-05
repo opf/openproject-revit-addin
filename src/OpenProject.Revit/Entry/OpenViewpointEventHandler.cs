@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenProject.Shared.Math3D;
+using OpenProject.Shared.Math3D.Enumeration;
 
 namespace OpenProject.Revit.Entry
 {
@@ -62,16 +63,13 @@ namespace OpenProject.Revit.Entry
     {
       try
       {
-        var uiDoc = app.ActiveUIDocument;
-        var doc = uiDoc.Document;
+        UIDocument uiDoc = app.ActiveUIDocument;
+        Document doc = uiDoc.Document;
 
-        if (_bcfViewpoint.Viewpoint?.Orthogonal_camera != null)
-          ShowOrthogonalView(_bcfViewpoint, doc, uiDoc, app);
-        else if (_bcfViewpoint.Viewpoint?.Perspective_camera != null)
-          ShowPerspectiveView(_bcfViewpoint, doc, uiDoc);
-        else
+        if (!ShowOpenProjectView(app, _bcfViewpoint))
           return;
 
+        DeselectAndUnhideElements(uiDoc);
         ApplyElementStyles(_bcfViewpoint, doc, uiDoc);
         ApplyClippingPlanes(_bcfViewpoint, uiDoc);
 
@@ -96,161 +94,101 @@ namespace OpenProject.Revit.Entry
       }
     }
 
-    private static void ShowOrthogonalView(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc,
-      UIApplication app)
+    private static bool ShowOpenProjectView(UIApplication app, BcfViewpointViewModel bcfViewpoint)
     {
-      var orthogonalCamera = bcfViewpoint.Viewpoint?.Orthogonal_camera;
-      if (orthogonalCamera == null)
+      Camera camera = bcfViewpoint.GetCamera();
+      if (camera.Type == CameraType.None)
+        return false;
+
+      Document doc = app.ActiveUIDocument.Document;
+      View3D openProjectView = doc.GetOpenProjectView(camera.Type);
+
+      XYZ cameraViewPoint = RevitUtils.GetRevitXYZ(camera.Viewpoint);
+      XYZ cameraDirection = RevitUtils.GetRevitXYZ(camera.Direction);
+      XYZ cameraUpVector = RevitUtils.GetRevitXYZ(camera.UpVector);
+
+      ViewOrientation3D orient3D =
+        RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, true);
+
+      using var trans = new Transaction(doc);
+      if (trans.Start("Apply view camera") == TransactionStatus.Started)
       {
-        return;
-      }
-
-      // TODO: Below, we're using the objects from the 'iabi.BCF' package. I'm not sure why, but it's
-      // using float instead of a double for the 'View to World Scale' part. This should probably not
-      // cause any problems, since the lower precision is likely enough for the task, but we might
-      // want to think about maybe just fix the iabi.BCF package.
-      var zoom = Convert.ToDouble(orthogonalCamera.View_to_world_scale).ToInternalRevitUnit();
-      var cameraDirection = RevitUtils.GetRevitXYZ(orthogonalCamera.Camera_direction.X,
-        orthogonalCamera.Camera_direction.Y,
-        orthogonalCamera.Camera_direction.Z);
-      var cameraUpVector = RevitUtils.GetRevitXYZ(orthogonalCamera.Camera_up_vector.X,
-        orthogonalCamera.Camera_up_vector.Y,
-        orthogonalCamera.Camera_up_vector.Z);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(orthogonalCamera.Camera_view_point.X,
-        orthogonalCamera.Camera_view_point.Y,
-        orthogonalCamera.Camera_view_point.Z);
-      var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, true);
-
-      View3D orthoView = null;
-      //if active view is 3d ortho use it
-      if (doc.ActiveView.ViewType == ViewType.ThreeD)
-      {
-        var activeView3D = doc.ActiveView as View3D;
-        if (!activeView3D.IsPerspective)
-          orthoView = activeView3D;
-      }
-
-      //try to use an existing 3D view
-      orthoView ??= Get3dViews(doc).FirstOrDefault(o => o.Name is "{3D}" or "BCFortho");
-
-      using (var trans = new Transaction(uidoc.Document))
-      {
-        if (trans.Start("Open orthogonal view") == TransactionStatus.Started)
+        if (camera.Type == CameraType.Perspective)
         {
-          if (orthoView == null)
-          {
-            orthoView = View3D.CreateIsometric(doc, GetFamilyViews(doc).First().Id);
-            orthoView.Name = "BCFortho";
-          }
-          else
-          {
-            orthoView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
-          }
-
-          orthoView.SetOrientation(orient3D);
-          trans.Commit();
+          Parameter farClip = openProjectView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR);
+          if (farClip.HasValue) farClip.Set(0);
         }
+
+        openProjectView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+        openProjectView.CropBoxActive = false;
+        openProjectView.CropBoxVisible = false;
+        openProjectView.SetOrientation(orient3D);
       }
 
-      uidoc.ActiveView = orthoView;
+      trans.Commit();
 
-      var viewChangedZoomListener = new ActiveViewChangedZoomListener(orthoView.Id.IntegerValue, zoom, app);
-      viewChangedZoomListener.ListenForActiveViewChangeAndSetZoom();
+      app.ActiveUIDocument.ActiveView = openProjectView;
+
+      ToggleCameraMode(doc, openProjectView, camera.Type);
+
+      if (camera.Type == CameraType.Orthogonal && camera is OrthogonalCamera orthoCam)
+      {
+        openProjectView.ToggleToIsometric();
+        AppIdlingCallbackListener.SetPendingZoomChangedCallback(app, openProjectView.Id, orthoCam.ViewToWorldScale);
+      }
+
+      return true;
     }
 
-    private static void ShowPerspectiveView(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uidoc)
+    private static void ToggleCameraMode(Document doc, View3D view, CameraType type)
     {
-      var perspectiveCamera = bcfViewpoint.Viewpoint?.Perspective_camera;
-      if (perspectiveCamera == null)
-      {
+      if (view.IsPerspective && type == CameraType.Perspective)
         return;
+
+      if (!view.IsPerspective && type == CameraType.Orthogonal)
+        return;
+
+      using var trans = new Transaction(doc);
+      if (trans.Start("Toggle camera mode") == TransactionStatus.Started)
+      {
+        if (type == CameraType.Perspective)
+          view.ToggleToPerspective();
+        else if (type == CameraType.Orthogonal)
+          view.ToggleToIsometric();
       }
 
-      bcfViewpoint.EnsurePerspectiveCameraVectorsAreOrthogonal();
+      trans.Commit();
+    }
 
-      //not used since the fov cannot be changed in Revit
-      // This is also a float, similar to the view to world scale
-      var zoom = perspectiveCamera.Field_of_view;
-      //FOV - not used
-      //double z1 = 18 / Math.Tan(zoom / 2 * Math.PI / 180);
-      //double z = 18 / Math.Tan(25 / 2 * Math.PI / 180);
-      //double factor = z1 - z;
+    private static void DeselectAndUnhideElements(UIDocument uiDocument)
+    {
+      Document document = uiDocument.Document;
 
-      var cameraDirection = RevitUtils.GetRevitXYZ(perspectiveCamera.Camera_direction.X,
-        perspectiveCamera.Camera_direction.Y,
-        perspectiveCamera.Camera_direction.Z);
-      var cameraUpVector = RevitUtils.GetRevitXYZ(perspectiveCamera.Camera_up_vector.X,
-        perspectiveCamera.Camera_up_vector.Y,
-        perspectiveCamera.Camera_up_vector.Z);
-      var cameraViewPoint = RevitUtils.GetRevitXYZ(perspectiveCamera.Camera_view_point.X,
-        perspectiveCamera.Camera_view_point.Y,
-        perspectiveCamera.Camera_view_point.Z);
-      var orient3D = RevitUtils.ConvertBasePoint(doc, cameraViewPoint, cameraDirection, cameraUpVector, false);
-
-      //try to use an existing 3D view
-      var perspectiveView = Get3dViews(doc).FirstOrDefault(o => o.Name == "BCFpersp");
-
-      using (var trans = new Transaction(uidoc.Document))
+      using var transaction = new Transaction(uiDocument.Document);
+      if (transaction.Start("Deselect selected and show hidden elements") == TransactionStatus.Started)
       {
-        if (trans.Start("Open perspective view") == TransactionStatus.Started)
+        // This is to ensure no components are selected
+        uiDocument.Selection.SetElementIds(new List<ElementId>());
+
+        var hiddenRevitElements = new FilteredElementCollector(document)
+          .WhereElementIsNotElementType()
+          .WhereElementIsViewIndependent()
+          .Where(e => e.IsHidden(document.ActiveView)) //might affect performance, but it's necessary
+          .Select(e => e.Id)
+          .ToList();
+
+        if (hiddenRevitElements.Any())
         {
-          if (perspectiveView == null)
-          {
-            perspectiveView = View3D.CreatePerspective(doc, GetFamilyViews(doc).First().Id);
-            perspectiveView.Name = "BCFpersp";
-          }
-          else
-          {
-            //reusing an existing view, I net to reset the visibility
-            //placed this here because if set afterwards it doesn't work
-            perspectiveView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
-          }
-
-          perspectiveView.SetOrientation(orient3D);
-
-          // turn off the far clip plane
-          if (perspectiveView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR).HasValue)
-          {
-            var farClip = perspectiveView.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR);
-            farClip.Set(0);
-          }
-
-          perspectiveView.CropBoxActive = false;
-          perspectiveView.CropBoxVisible = false;
-
-          trans.Commit();
+          // Resetting hidden elements to show all elements in the model
+          document.ActiveView.UnhideElements(hiddenRevitElements);
         }
       }
 
-      uidoc.ActiveView = perspectiveView;
+      transaction.Commit();
     }
 
     private static void ApplyElementStyles(BcfViewpointViewModel bcfViewpoint, Document document, UIDocument uiDocument)
     {
-      using (var trans = new Transaction(uiDocument.Document))
-      {
-        if (trans.Start("Apply BCF visibility and selection") == TransactionStatus.Started)
-        {
-          // This is to ensure no components are selected
-          uiDocument.Selection.SetElementIds(new List<ElementId>());
-
-          var hiddenRevitElements = new FilteredElementCollector(document)
-            .WhereElementIsNotElementType()
-            .WhereElementIsViewIndependent()
-            .Where(e => e.IsHidden(document.ActiveView)) //might affect performance, but it's necessary
-            .Select(e => e.Id)
-            .ToList();
-
-          if (hiddenRevitElements.Any())
-          {
-            // Resetting hidden elements to show all elements in the model
-            document.ActiveView.UnhideElements(hiddenRevitElements);
-          }
-        }
-
-        trans.Commit();
-      }
-
       if (bcfViewpoint.Components?.Visibility == null)
         return;
 
@@ -264,72 +202,40 @@ namespace OpenProject.Revit.Entry
       // We're creating a dictionary of all the Revit internal Ids to be looked up by their IFC Guids
       // If this proves to be a performance issue, we should cache this dictionary in an instance variable
       var revitElementsByIfcGuid = new Dictionary<string, ElementId>();
-      foreach (var revitElement in visibleRevitElements)
+      foreach (ElementId revitElement in visibleRevitElements)
       {
         var ifcGuid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(document, revitElement));
         if (!revitElementsByIfcGuid.ContainsKey(ifcGuid))
-        {
           revitElementsByIfcGuid.Add(ifcGuid, revitElement);
-        }
       }
 
-      using (var trans = new Transaction(uiDocument.Document))
+      using var trans = new Transaction(uiDocument.Document);
+      if (trans.Start("Apply BCF visibility and selection") == TransactionStatus.Started)
       {
-        if (trans.Start("Apply BCF visibility and selection") == TransactionStatus.Started)
-        {
+        var exceptionElements = bcfViewpoint.Components.Visibility.Exceptions
+          .Where(bcfComponentException => revitElementsByIfcGuid.ContainsKey(bcfComponentException.Ifc_guid))
+          .Select(bcfComponentException => revitElementsByIfcGuid[bcfComponentException.Ifc_guid])
+          .ToList();
+
+        if (exceptionElements.Any())
           if (bcfViewpoint.Components.Visibility.Default_visibility)
-          {
-            var hiddenElements = new List<ElementId>();
-            foreach (var bcfComponentException in bcfViewpoint.Components.Visibility.Exceptions)
-            {
-              if (revitElementsByIfcGuid.ContainsKey(bcfComponentException.Ifc_guid))
-              {
-                hiddenElements.Add(revitElementsByIfcGuid[bcfComponentException.Ifc_guid]);
-              }
-            }
-
-            if (hiddenElements.Any())
-            {
-              document.ActiveView.HideElementsTemporary(hiddenElements);
-            }
-          }
+            document.ActiveView.HideElementsTemporary(exceptionElements);
           else
-          {
-            var visibleElements = new List<ElementId>();
-            foreach (var bcfComponentException in bcfViewpoint.Components.Visibility.Exceptions)
-            {
-              if (revitElementsByIfcGuid.ContainsKey(bcfComponentException.Ifc_guid))
-              {
-                visibleElements.Add(revitElementsByIfcGuid[bcfComponentException.Ifc_guid]);
-              }
-            }
+            document.ActiveView.IsolateElementsTemporary(exceptionElements);
 
-            if (visibleElements.Any())
-            {
-              document.ActiveView.IsolateElementsTemporary(visibleElements);
-            }
-          }
+        if (bcfViewpoint.Components.Selection?.Any() ?? false)
+        {
+          var selectedElements = bcfViewpoint.Components.Selection
+            .Where(selectedElement => revitElementsByIfcGuid.ContainsKey(selectedElement.Ifc_guid))
+            .Select(selectedElement => revitElementsByIfcGuid[selectedElement.Ifc_guid])
+            .ToList();
 
-          if (bcfViewpoint.Components.Selection?.Any() ?? false)
-          {
-            var selectedElements = new List<ElementId>();
-            foreach (var selectedElement in bcfViewpoint.Components.Selection)
-            {
-              if (revitElementsByIfcGuid.ContainsKey(selectedElement.Ifc_guid))
-              {
-                selectedElements.Add(revitElementsByIfcGuid[selectedElement.Ifc_guid]);
-              }
-            }
-
-            if (selectedElements.Any())
-            {
-              uiDocument.Selection.SetElementIds(selectedElements);
-            }
-          }
+          if (selectedElements.Any())
+            uiDocument.Selection.SetElementIds(selectedElements);
         }
-
-        trans.Commit();
       }
+
+      trans.Commit();
     }
 
     private static void ApplyClippingPlanes(BcfViewpointViewModel bcfViewpoint, UIDocument uiDocument)
@@ -339,7 +245,7 @@ namespace OpenProject.Revit.Entry
       if (clippingPlanes == null || !clippingPlanes.Any() || uiDocument.ActiveView is not View3D view3d)
         return;
 
-      var boundingBox = clippingPlanes
+      AxisAlignedBoundingBox boundingBox = clippingPlanes
         .Select(p => p.ToAxisAlignedBoundingBox(_viewpointAngleThresholdRad))
         .Aggregate(AxisAlignedBoundingBox.Infinite, (current, nextBox) => current.MergeReduce(nextBox));
 
@@ -373,21 +279,6 @@ namespace OpenProject.Revit.Entry
         box.Max.Z == decimal.MaxValue ? double.MaxValue : ((double) box.Max.Z).ToInternalRevitUnit());
 
       return new BoundingBoxXYZ { Min = min, Max = max };
-    }
-
-    private static IEnumerable<ViewFamilyType> GetFamilyViews(Document doc)
-    {
-      return from elem in new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType))
-        let type = elem as ViewFamilyType
-        where type.ViewFamily == ViewFamily.ThreeDimensional
-        select type;
-    }
-
-    private static IEnumerable<View3D> Get3dViews(Document doc)
-    {
-      return from elem in new FilteredElementCollector(doc).OfClass(typeof(View3D))
-        let view = elem as View3D
-        select view;
     }
   }
 }

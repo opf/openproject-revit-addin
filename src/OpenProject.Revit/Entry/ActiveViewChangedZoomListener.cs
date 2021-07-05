@@ -3,45 +3,53 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using System;
 using System.Linq;
+using OpenProject.Revit.Data;
 
 namespace OpenProject.Revit.Entry
 {
   /// <summary>
-  /// This class listens to the App.Idling event in Revit an checks if a specific view is set.
-  /// If the view is the active view, the zoom is set to display the model correctly.
+  /// This class collects static functions that registers asynchronous callbacks to the idling state of the
+  /// <see cref="Autodesk.Revit.UI.UIApplication"/>, which deregister themselves after execution.
   /// </summary>
-  public class ActiveViewChangedZoomListener
+  public static class AppIdlingCallbackListener
   {
-    private readonly int _orthoViewId;
-    private readonly double _zoomValue;
-    private readonly UIApplication _app;
-
-    public ActiveViewChangedZoomListener(int orthoViewId, double zoomValue, UIApplication app)
+    /// <summary>
+    /// Sets a callback that applies a zoom to the current view.
+    /// </summary>
+    /// <param name="app">The current UI application.</param>
+    /// <param name="viewId">The view ID for the view to be zoomed.</param>
+    /// <param name="zoom">The zoom in decimal precision.</param>
+    public static void SetPendingZoomChangedCallback(UIApplication app, ElementId viewId, decimal zoom)
     {
-      _orthoViewId = orthoViewId;
-      _zoomValue = zoomValue;
-      _app = app;
-    }
-
-    public void ListenForActiveViewChangeAndSetZoom()
-    {
-      // Setting the zoom value happens after the actual view is displayed
-      _app.Idling += SetZoomAndUnsubscribeIfMatchingViewId;
-    }
-
-    private void SetZoomAndUnsubscribeIfMatchingViewId(object sender, IdlingEventArgs eventArgs)
-    {
-      var currentView = _app.ActiveUIDocument.GetOpenUIViews().First();
-      if (currentView.ViewId.IntegerValue == _orthoViewId)
+      void Callback(object sender, IdlingEventArgs args)
       {
-        var activeView = _app.ActiveUIDocument.ActiveView;
-        var uiDoc = _app.ActiveUIDocument;
-        //set UI view position and zoom
-        XYZ m_xyzTopLeft = activeView.Origin.Add(activeView.UpDirection.Multiply(_zoomValue)).Subtract(activeView.RightDirection.Multiply(_zoomValue));
-        XYZ m_xyzBottomRight = activeView.Origin.Subtract(activeView.UpDirection.Multiply(_zoomValue)).Add(activeView.RightDirection.Multiply(_zoomValue));
-        uiDoc.GetOpenUIViews().First().ZoomAndCenterRectangle(m_xyzTopLeft, m_xyzBottomRight);
-        _app.Idling -= SetZoomAndUnsubscribeIfMatchingViewId;
+        UIView currentView = app.ActiveUIDocument.GetOpenUIViews().First();
+        if (currentView.ViewId != viewId) return;
+
+        UIDocument uiDoc = app.ActiveUIDocument;
+        View activeView = uiDoc.ActiveView;
+
+        var zoomCorners = currentView.GetZoomCorners();
+        XYZ bottomLeft = zoomCorners[0];
+        XYZ topRight = zoomCorners[1];
+        var (currentHeight, currentWidth) =
+          RevitUtils.ConvertToViewBoxValues(topRight, bottomLeft, activeView.RightDirection);
+
+        var zoomedViewBoxHeight = Convert.ToDouble(zoom).ToInternalRevitUnit();
+        var zoomedViewBoxWidth = zoomedViewBoxHeight * currentWidth / currentHeight;
+
+        XYZ newTopRight = activeView.Origin
+          .Add(activeView.UpDirection.Multiply(zoomedViewBoxHeight / 2))
+          .Add(activeView.RightDirection.Multiply(zoomedViewBoxWidth / 2));
+        XYZ newBottomLeft = activeView.Origin
+          .Subtract(activeView.UpDirection.Multiply(zoomedViewBoxHeight / 2))
+          .Subtract(activeView.RightDirection.Multiply(zoomedViewBoxWidth / 2));
+
+        currentView.ZoomAndCenterRectangle(newTopRight, newBottomLeft);
+        app.Idling -= Callback;
       }
+
+      app.Idling += Callback;
     }
   }
 }

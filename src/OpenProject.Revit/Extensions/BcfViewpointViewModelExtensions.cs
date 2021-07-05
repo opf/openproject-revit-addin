@@ -1,29 +1,44 @@
-﻿using OpenProject.Shared.ViewModels.Bcf;
+﻿using System;
+using OpenProject.Shared.BcfApi;
+using OpenProject.Shared.Math3D;
+using OpenProject.Shared.Math3D.Enumeration;
+using OpenProject.Shared.ViewModels.Bcf;
 
 namespace OpenProject.Revit.Extensions
 {
   public static class BcfViewpointViewModelExtensions
   {
-    public static void EnsurePerspectiveCameraVectorsAreOrthogonal(this BcfViewpointViewModel bcfViewpointViewModel)
+    public static Camera GetCamera(this BcfViewpointViewModel bcfViewpoint)
     {
-      var perspectiveCamera = bcfViewpointViewModel?.Viewpoint?.Perspective_camera;
-      if (perspectiveCamera == null)
+      if (bcfViewpoint?.Viewpoint?.Perspective_camera != null)
       {
-        return;
+        var camera = new PerspectiveCamera();
+        var bcfPerspective = bcfViewpoint.Viewpoint.Perspective_camera;
+
+        camera.Type = CameraType.Perspective;
+        camera.FieldOfView = Convert.ToDecimal(bcfPerspective.Field_of_view);
+        camera.Direction = bcfPerspective.Camera_direction.ToVector3();
+        camera.UpVector = bcfPerspective.Camera_up_vector.ToVector3();
+        camera.Viewpoint = bcfPerspective.Camera_view_point.ToVector3();
+
+        return camera;
       }
 
-      if (perspectiveCamera.Camera_direction.X != 0)
+      if (bcfViewpoint?.Viewpoint?.Orthogonal_camera != null)
       {
-        perspectiveCamera.Camera_up_vector.X = -1 * (perspectiveCamera.Camera_direction.Y * perspectiveCamera.Camera_up_vector.Y + perspectiveCamera.Camera_direction.Z * perspectiveCamera.Camera_up_vector.Z) / perspectiveCamera.Camera_direction.X;
+        var camera = new OrthogonalCamera();
+        var bcfOrthogonal = bcfViewpoint.Viewpoint.Orthogonal_camera;
+
+        camera.Type = CameraType.Orthogonal;
+        camera.ViewToWorldScale = Convert.ToDecimal(bcfOrthogonal.View_to_world_scale);
+        camera.Direction = bcfOrthogonal.Camera_direction.ToVector3();
+        camera.UpVector = bcfOrthogonal.Camera_up_vector.ToVector3();
+        camera.Viewpoint = bcfOrthogonal.Camera_view_point.ToVector3();
+
+        return camera;
       }
-      else if (perspectiveCamera.Camera_direction.Y != 0)
-      {
-        perspectiveCamera.Camera_up_vector.Y = -1 * (perspectiveCamera.Camera_direction.X * perspectiveCamera.Camera_up_vector.X + perspectiveCamera.Camera_direction.Z * perspectiveCamera.Camera_up_vector.Z) / perspectiveCamera.Camera_direction.Y;
-      }
-      else if (perspectiveCamera.Camera_direction.Z != 0)
-      {
-        perspectiveCamera.Camera_up_vector.Z = -1 * (perspectiveCamera.Camera_direction.X * perspectiveCamera.Camera_up_vector.X + perspectiveCamera.Camera_direction.Y * perspectiveCamera.Camera_up_vector.Y) / perspectiveCamera.Camera_direction.Z;
-      }
+
+      return new OrthogonalCamera();
     }
   }
 }

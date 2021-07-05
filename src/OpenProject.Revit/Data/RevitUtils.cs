@@ -1,12 +1,13 @@
 ﻿using System;
 using Autodesk.Revit.DB;
+using OpenProject.Shared.Math3D;
 
 namespace OpenProject.Revit.Data
 {
   public static class RevitUtils
   {
     /// <summary>
-    /// MOVES THE CAMERA ACCORDING TO THE PROJECT BASE LOCATION 
+    /// MOVES THE CAMERA ACCORDING TO THE PROJECT BASE LOCATION
     /// function that changes the coordinates accordingly to the project base location to an absolute location (for BCF export)
     /// if the value negative is set to true, does the opposite (for opening BCF views)
     /// </summary>
@@ -17,61 +18,67 @@ namespace OpenProject.Revit.Data
     /// <returns></returns>
     public static ViewOrientation3D ConvertBasePoint(Document doc, XYZ c, XYZ view, XYZ up, bool negative)
     {
-      double angle = 0;
-      double x = 0;
-      double y = 0;
-      double z = 0;
-
       // VERY IMPORTANT
       // `BuiltInParameter.BASEPOINT_EASTWEST_PARAM` is the value of the BASE POINT LOCATION.
       // `position` is the location of the BPL related to Revit's absolute origin.
       // If BPL is set to 0,0,0 not always it corresponds to Revit's origin.
 
-      XYZ origin = new XYZ(0, 0, 0);
+      var origin = new XYZ(0, 0, 0);
 
-     ProjectPosition position = doc.ActiveProjectLocation.GetProjectPosition(origin);
+      ProjectPosition position = doc.ActiveProjectLocation.GetProjectPosition(origin);
 
-      int i = (negative) ? -1 : 1;
+      var i = negative ? -1 : 1;
 
-      x = i * position.EastWest;
-      y = i * position.NorthSouth;
-      z = i * position.Elevation;
-      angle = i * position.Angle;
+      var x = i * position.EastWest;
+      var y = i * position.NorthSouth;
+      var z = i * position.Elevation;
+      var angle = i * position.Angle;
 
       if (negative) // I do the addition BEFORE
         c = new XYZ(c.X + x, c.Y + y, c.Z + z);
 
       //rotation
-      double centX = (c.X * Math.Cos(angle)) - (c.Y * Math.Sin(angle));
-      double centY = (c.X * Math.Sin(angle)) + (c.Y * Math.Cos(angle));
+      var centX = c.X * Math.Cos(angle) - c.Y * Math.Sin(angle);
+      var centY = c.X * Math.Sin(angle) + c.Y * Math.Cos(angle);
 
-      XYZ newC = new XYZ();
-      if (negative)
-        newC = new XYZ(centX, centY, c.Z);
-      else // I do the addition AFTERWARDS
-        newC = new XYZ(centX + x, centY + y, c.Z + z);
+      XYZ newC = negative ? new XYZ(centX, centY, c.Z) : new XYZ(centX + x, centY + y, c.Z + z);
 
+      var viewX = (view.X * Math.Cos(angle)) - (view.Y * Math.Sin(angle));
+      var viewY = (view.X * Math.Sin(angle)) + (view.Y * Math.Cos(angle));
+      var newView = new XYZ(viewX, viewY, view.Z);
 
-      double viewX = (view.X * Math.Cos(angle)) - (view.Y * Math.Sin(angle));
-      double viewY = (view.X * Math.Sin(angle)) + (view.Y * Math.Cos(angle));
-      XYZ newView = new XYZ(viewX, viewY, view.Z);
+      var upX = (up.X * Math.Cos(angle)) - (up.Y * Math.Sin(angle));
+      var upY = (up.X * Math.Sin(angle)) + (up.Y * Math.Cos(angle));
 
-      double upX = (up.X * Math.Cos(angle)) - (up.Y * Math.Sin(angle));
-      double upY = (up.X * Math.Sin(angle)) + (up.Y * Math.Cos(angle));
-
-      XYZ newUp = new XYZ(upX, upY, up.Z);
+      var newUp = new XYZ(upX, upY, up.Z);
       return new ViewOrientation3D(newC, newUp, newView);
     }
 
-    public static XYZ GetRevitXYZ(double X, double Y, double Z)
+    /// <summary>
+    /// Converts some basic revit view values to a view box height and a view box width.
+    /// The revit views are defined by coordinates in project space.
+    /// </summary>
+    /// <param name="topRight">The top right corner of the revit view.</param>
+    /// <param name="bottomLeft">The bottom left corner of the revit view.</param>
+    /// <param name="right">The right direction of the revit view.</param>
+    /// <returns>A tuple of the height and the width of the view box.</returns>
+    public static ( double viewBoxHeight, double viewBoxWidth) ConvertToViewBoxValues(
+      XYZ topRight, XYZ bottomLeft, XYZ right)
     {
-      return new XYZ(X.ToInternalRevitUnit(), Y.ToInternalRevitUnit(), Z.ToInternalRevitUnit());
+      XYZ diagonal = topRight.Subtract(bottomLeft);
+      var distance = topRight.DistanceTo(bottomLeft);
+      var angleBetweenBottomAndDiagonal = diagonal.AngleTo(right);
+
+      var height = distance * Math.Sin(angleBetweenBottomAndDiagonal);
+      var width = distance * Math.Cos(angleBetweenBottomAndDiagonal);
+
+      return (height, width);
     }
 
-    public static XYZ GetRevitXYZ(Shared.ViewModels.Bcf.BcfPointOrVectorViewModel d)
-    {
-      return new XYZ(d.X.ToInternalRevitUnit(), d.Y.ToInternalRevitUnit(), d.Z.ToInternalRevitUnit());
-    }
+    public static XYZ GetRevitXYZ(Vector3 vec) =>
+      new(Convert.ToDouble(vec.X).ToInternalRevitUnit(),
+        Convert.ToDouble(vec.Y).ToInternalRevitUnit(),
+        Convert.ToDouble(vec.Z).ToInternalRevitUnit());
 
     /// <summary>
     /// Converts feet units to meters. Feet are the internal Revit units.
@@ -100,20 +107,5 @@ namespace OpenProject.Revit.Data
       return UnitUtils.ConvertToInternalUnits(meters, DisplayUnitType.DUT_METERS);
 #endif
     }
-
-    /// <summary>
-    /// Converts meters units to feet. Feet are the internal Revit units.
-    /// </summary>
-    /// <param name="meters">Value in feet to be converted to feet</param>
-    /// <returns></returns>
-    public static float ToInternalRevitUnit(this float meters)
-    {
-#if Version2021
-      return Convert.ToSingle(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(meters), UnitTypeId.Meters));
-#else
-      return Convert.ToSingle(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(meters), DisplayUnitType.DUT_METERS));
-#endif
-    }
   }
-
 }
