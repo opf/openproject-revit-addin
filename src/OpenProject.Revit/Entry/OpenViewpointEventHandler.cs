@@ -129,8 +129,6 @@ namespace OpenProject.Revit.Entry
 
       app.ActiveUIDocument.ActiveView = openProjectView;
 
-      ToggleCameraMode(doc, openProjectView, camera.Type);
-
       if (camera.Type == CameraType.Orthogonal && camera is OrthogonalCamera orthoCam)
       {
         openProjectView.ToggleToIsometric();
@@ -138,26 +136,6 @@ namespace OpenProject.Revit.Entry
       }
 
       return true;
-    }
-
-    private static void ToggleCameraMode(Document doc, View3D view, CameraType type)
-    {
-      if (view.IsPerspective && type == CameraType.Perspective)
-        return;
-
-      if (!view.IsPerspective && type == CameraType.Orthogonal)
-        return;
-
-      using var trans = new Transaction(doc);
-      if (trans.Start("Toggle camera mode") == TransactionStatus.Started)
-      {
-        if (type == CameraType.Perspective)
-          view.ToggleToPerspective();
-        else if (type == CameraType.Orthogonal)
-          view.ToggleToIsometric();
-      }
-
-      trans.Commit();
     }
 
     private static void DeselectAndUnhideElements(UIDocument uiDocument)

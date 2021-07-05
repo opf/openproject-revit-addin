@@ -140,13 +140,12 @@ namespace OpenProject.Revit.Data
         .WhereElementIsViewIndependent()
         .ToElementIds();
       var hiddenElems = new FilteredElementCollector(doc)
-          .WhereElementIsNotElementType()
-          .WhereElementIsViewIndependent()
-          .Where(x => x.IsHidden(doc.ActiveView)
-                      || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate,
-                        x.Id)).Select(x => x.Id)
-          .ToList()
-        ; //would need to check how much this is affecting performance
+        .WhereElementIsNotElementType()
+        .WhereElementIsViewIndependent()
+        .Where(x => x.IsHidden(doc.ActiveView)
+                    || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate,
+                      x.Id)).Select(x => x.Id)
+        .ToList(); //would need to check how much this is affecting performance
 
       var selectedElems = uiDoc.Selection.GetElementIds();
 
@@ -156,7 +155,8 @@ namespace OpenProject.Revit.Data
         bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
         {
           Default_visibility = false,
-          Exceptions = visibleElems.Select(visibleComponent => new iabi.BCF.APIObjects.V21.Component
+          Exceptions = visibleElems
+            .Select(visibleComponent => new iabi.BCF.APIObjects.V21.Component
             {
               Originating_system = versionName,
               Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, visibleComponent)),
@@ -170,7 +170,8 @@ namespace OpenProject.Revit.Data
         bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
         {
           Default_visibility = true,
-          Exceptions = hiddenElems.Select(hiddenComponent => new iabi.BCF.APIObjects.V21.Component
+          Exceptions = hiddenElems
+            .Select(hiddenComponent => new iabi.BCF.APIObjects.V21.Component
             {
               Originating_system = versionName,
               Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, hiddenComponent)),
@@ -200,10 +201,8 @@ namespace OpenProject.Revit.Data
       // There are actually no clipping planes in a 3d view in revit, rather it's a
       // section box, meaning a set of 6 clipping planes that wrap the visible part
       // of a model inside a cuboid shape.
-      if (!(uiDoc.ActiveView is View3D view3d) || !view3d.IsSectionBoxActive)
-      {
+      if (uiDoc.ActiveView is not View3D { IsSectionBoxActive: true } view3d)
         return;
-      }
 
       bcfViewpoint.Viewpoint.Clipping_planes = new List<iabi.BCF.APIObjects.V21.Clipping_plane>();
       var revitSectionBox = view3d.GetSectionBox();
@@ -211,8 +210,8 @@ namespace OpenProject.Revit.Data
       // The Min and Max represent two corners of the section box on opposite
       // sides, so they're describing a cuboid 3D geometry, which we can now
       // use to derive the six actual planes from
-      var transformedMin = revitSectionBox.Transform.OfPoint(revitSectionBox.Min);
-      var transformedMax = revitSectionBox.Transform.OfPoint(revitSectionBox.Max);
+      XYZ transformedMin = revitSectionBox.Transform.OfPoint(revitSectionBox.Min);
+      XYZ transformedMax = revitSectionBox.Transform.OfPoint(revitSectionBox.Max);
 
       // A clipping plane is defined as a point and a direction, so we now
       // can use each point (Min and Max) three times, each with one direction in
@@ -252,22 +251,21 @@ namespace OpenProject.Revit.Data
             Direction = revitSectionBox.Transform.OfVector(new XYZ(0, 0, 1))
           }
         }
-        .Select(cp =>
-          new iabi.BCF.APIObjects.V21.Clipping_plane
+        .Select(cp => new iabi.BCF.APIObjects.V21.Clipping_plane
+        {
+          Location = new iabi.BCF.APIObjects.V21.Location
           {
-            Location = new iabi.BCF.APIObjects.V21.Location
-            {
-              X = Convert.ToSingle(cp.Location.X.ToMeters()),
-              Y = Convert.ToSingle(cp.Location.Y.ToMeters()),
-              Z = Convert.ToSingle(cp.Location.Z.ToMeters())
-            },
-            Direction = new iabi.BCF.APIObjects.V21.Direction
-            {
-              X = Convert.ToSingle(cp.Direction.X),
-              Y = Convert.ToSingle(cp.Direction.Y),
-              Z = Convert.ToSingle(cp.Direction.Z)
-            }
-          })
+            X = Convert.ToSingle(cp.Location.X.ToMeters()),
+            Y = Convert.ToSingle(cp.Location.Y.ToMeters()),
+            Z = Convert.ToSingle(cp.Location.Z.ToMeters())
+          },
+          Direction = new iabi.BCF.APIObjects.V21.Direction
+          {
+            X = Convert.ToSingle(cp.Direction.X),
+            Y = Convert.ToSingle(cp.Direction.Y),
+            Z = Convert.ToSingle(cp.Direction.Z)
+          }
+        })
         .ToList();
     }
   }
