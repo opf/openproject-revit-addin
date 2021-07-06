@@ -60,7 +60,7 @@ namespace OpenProject.Tests.ViewModels.ChangeListeners
       var changeListener = new ChangeListener(bcfMarkup);
       var hasNotified = false;
       changeListener.PropertyChanged += (s, e) => hasNotified = true;
-      bcfMarkup.Comments.Add(new BcfCommentviewModel());
+      bcfMarkup.Comments.Add(new BcfCommentViewModel());
       Assert.True(hasNotified);
     }
 
@@ -70,7 +70,7 @@ namespace OpenProject.Tests.ViewModels.ChangeListeners
       var bcfMarkup = new BcfMarkupViewModel();
       var changeListener = new ChangeListener(bcfMarkup);
       var hasNotified = false;
-      bcfMarkup.Comments.Add(new BcfCommentviewModel());
+      bcfMarkup.Comments.Add(new BcfCommentViewModel());
       changeListener.PropertyChanged += (s, e) => hasNotified = true;
       bcfMarkup.Comments.Clear();
       Assert.True(hasNotified);
@@ -80,7 +80,7 @@ namespace OpenProject.Tests.ViewModels.ChangeListeners
     public void NotifiesOfChangeWhenPropertyInListElementChanged_WhenElementPresentBeforeListenerCreated()
     {
       var bcfMarkup = new BcfMarkupViewModel();
-      bcfMarkup.Comments.Add(new BcfCommentviewModel());
+      bcfMarkup.Comments.Add(new BcfCommentViewModel());
       var changeListener = new ChangeListener(bcfMarkup);
       var hasNotified = false;
       changeListener.PropertyChanged += (s, e) => hasNotified = true;
@@ -94,7 +94,7 @@ namespace OpenProject.Tests.ViewModels.ChangeListeners
       var bcfMarkup = new BcfMarkupViewModel();
       var changeListener = new ChangeListener(bcfMarkup);
       var hasNotified = false;
-      bcfMarkup.Comments.Add(new BcfCommentviewModel());
+      bcfMarkup.Comments.Add(new BcfCommentViewModel());
       changeListener.PropertyChanged += (s, e) => hasNotified = true;
       bcfMarkup.Comments.Single().Text = "Hello World!";
       Assert.True(hasNotified);
@@ -106,7 +106,7 @@ namespace OpenProject.Tests.ViewModels.ChangeListeners
       var bcfMarkup = new BcfMarkupViewModel();
       var changeListener = new ChangeListener(bcfMarkup);
       var hasNotified = false;
-      var comment = new BcfCommentviewModel();
+      var comment = new BcfCommentViewModel();
       bcfMarkup.Comments.Add(comment);
       bcfMarkup.Comments.Clear();
       changeListener.PropertyChanged += (s, e) => hasNotified = true;

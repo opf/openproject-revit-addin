@@ -4,7 +4,7 @@ using OpenProject.Shared.Math3D;
 
 namespace OpenProject.Shared.BcfApi
 {
-  public static class Extensions
+  public static class BcfApiExtensions
   {
     public static Vector3 ToVector3(this Direction direction) =>
       new Vector3(

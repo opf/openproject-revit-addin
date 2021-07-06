@@ -66,8 +66,10 @@ namespace OpenProject.Revit.Entry
         UIDocument uiDoc = app.ActiveUIDocument;
         Document doc = uiDoc.Document;
 
-        if (!ShowOpenProjectView(app, _bcfViewpoint))
-          return;
+        var hasCamera = _bcfViewpoint.GetCamera().Match(
+          camera => ShowOpenProjectView(app, camera),
+          () => false);
+        if (!hasCamera) return;
 
         DeselectAndUnhideElements(uiDoc);
         ApplyElementStyles(_bcfViewpoint, doc, uiDoc);
@@ -94,12 +96,8 @@ namespace OpenProject.Revit.Entry
       }
     }
 
-    private static bool ShowOpenProjectView(UIApplication app, BcfViewpointViewModel bcfViewpoint)
+    private static bool ShowOpenProjectView(UIApplication app, Camera camera)
     {
-      Camera camera = bcfViewpoint.GetCamera();
-      if (camera.Type == CameraType.None)
-        return false;
-
       Document doc = app.ActiveUIDocument.Document;
       View3D openProjectView = doc.GetOpenProjectView(camera.Type);
 
@@ -132,7 +130,8 @@ namespace OpenProject.Revit.Entry
       if (camera.Type == CameraType.Orthogonal && camera is OrthogonalCamera orthoCam)
       {
         openProjectView.ToggleToIsometric();
-        AppIdlingCallbackListener.SetPendingZoomChangedCallback(app, openProjectView.Id, orthoCam.ViewToWorldScale);
+        AppIdlingCallbackListener.SetPendingZoomChangedCallback(app, openProjectView.Id,
+          orthoCam.ViewToWorldScale);
       }
 
       return true;

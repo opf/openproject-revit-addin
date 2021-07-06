@@ -6,11 +6,22 @@ using OpenProject.Shared.Math3D.Enumeration;
 
 namespace OpenProject.Revit.Extensions
 {
+  /// <summary>
+  /// Extension written for handling of classes of the Revit API.
+  /// </summary>
   public static class RevitExtensions
   {
     private const string _openProjectOrthogonalViewName = "OpenProject Orthogonal";
     private const string _openProjectPerspectiveViewName = "OpenProject Perspective";
 
+    /// <summary>
+    /// Gets the correct 3D view for displaying OpenProject content. The type of the view is dependent of the requested
+    /// camera type, either orthogonal or perspective. If the view is not yet available, it is created.
+    /// </summary>
+    /// <param name="doc">The current revit document.</param>
+    /// <param name="type">The camera type for the requested view.</param>
+    /// <returns>A <see cref="View3D"/> with the correct settings to display OpenProject content.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"> Throws, if camera type is neither orthogonal nor perspective.</exception>
     public static View3D GetOpenProjectView(this Document doc, CameraType type)
     {
       var viewName = type switch

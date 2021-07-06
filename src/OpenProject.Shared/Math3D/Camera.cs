@@ -1,11 +1,12 @@
-﻿using OpenProject.Shared.Math3D.Enumeration;
+﻿using System;
+using OpenProject.Shared.Math3D.Enumeration;
 
 namespace OpenProject.Shared.Math3D
 {
   /// <summary>
   /// A camera wrapper using decimal precision.
   /// </summary>
-  public abstract class Camera
+  public abstract class Camera : IEquatable<Camera>
   {
     /// <summary>
     /// The camera location, also named camera viewpoint.
@@ -24,8 +25,18 @@ namespace OpenProject.Shared.Math3D
 
     /// <summary>
     /// The camera type, which can be orthogonal or perspective.
-    /// No camera type (None) is considered invalid camera data.
     /// </summary>
-    public CameraType Type { get; set; } = CameraType.None;
+    public abstract CameraType Type { get; }
+
+    /// <inheritdoc />
+    public virtual bool Equals(Camera other)
+    {
+      if (other == null) return false;
+
+      return Viewpoint.Equals(other.Viewpoint) &&
+             Direction.Equals(other.Direction) &&
+             UpVector.Equals(other.UpVector) &&
+             Type == other.Type;
+    }
   }
 }
