@@ -8,19 +8,14 @@ namespace OpenProject.Revit.Entry
 {
   public static class RibbonButtonClickHandler
   {
-
-#if Version2021
-
+#if Version2022
+    public const string RevitVersion = "2022";
+#elif Version2021
     public const string RevitVersion = "2021";
-
 #elif Version2020
-
     public const string RevitVersion = "2020";
-
 #elif Version2019
-
     public const string RevitVersion = "2019";
-
 #endif
 
     private static Process _bcfierWinProcess;
@@ -67,7 +62,8 @@ namespace OpenProject.Revit.Entry
         {
           td.TitleAutoPrefix = false;
           td.MainInstruction = "Untested Revit Version";
-          td.MainContent = "This Add-In was built and tested only for Revit " + RevitVersion + ", proceed at your own risk";
+          td.MainContent = "This Add-In was built and tested only for Revit " + RevitVersion +
+                           ", proceed at your own risk";
           td.Show();
         }
       }
@@ -85,7 +81,8 @@ namespace OpenProject.Revit.Entry
       {
         // The configuration can be used to override the path, if there's no valid file given then
         // the default installation location is used
-        var defaultInstallationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "OpenProject Revit AddIn", "OpenProject.Windows.exe");
+        var defaultInstallationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+          "OpenProject Revit AddIn", "OpenProject.Windows.exe");
         bcfierWinProcessPath = defaultInstallationPath;
       }
 
