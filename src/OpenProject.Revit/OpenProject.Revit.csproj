@@ -14,7 +14,7 @@
 
   <PropertyGroup>
     <TargetFramework Condition="'$(Revit2021)' == true or '$(Revit2022)' == true">net48</TargetFramework>
-    <TargetFramework Condition="'$(Revit2019)' == true or '$(Revit2020)' == true">net472</TargetFramework>
+    <TargetFramework Condition="'$(Revit2021)' != true and '$(Revit2021)' != true">net472</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <Platforms>x64</Platforms>
     <Configurations>Debug;Release;Release-2019;Debug-2019;Release-2020;Debug-2020;Release-2021;Debug-2021;Release-2022;Debug-2022</Configurations>
