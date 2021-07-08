@@ -14,6 +14,8 @@
 #define RevitAddin20  RevitAddinFolder+"\2020\"
 #define RevitFolder21 RevitAddinFolder+"\2021\"+RevitAppName
 #define RevitAddin21  RevitAddinFolder+"\2021\"
+#define RevitFolder22 RevitAddinFolder+"\2022\"+RevitAppName
+#define RevitAddin22  RevitAddinFolder+"\2022\"
 
 #define WinAppName    "OpenProject.Windows"
 
@@ -46,6 +48,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: revit19; Description: Addin for Autodesk Revit 2019;  Types: full
 Name: revit20; Description: Addin for Autodesk Revit 2020;  Types: full
 Name: revit21; Description: Addin for Autodesk Revit 2021;  Types: full
+Name: revit22; Description: Addin for Autodesk Revit 2022;  Types: full
 
 [Files]
 
@@ -62,7 +65,12 @@ Source: "{#Repository}\output\OpenProject.Windows\*"; DestDir: "{#RevitFolder20}
 ;REVIT 2021                                                                                                                                    
 Source: "{#Repository}\output\{#RevitAppName}\Release-2021\*"; DestDir: "{#RevitFolder21}"; Flags: ignoreversion recursesubdirs; Components: revit21 
 Source: "{#Repository}\output\{#RevitAppName}\Release-2021\*.addin"; DestDir: "{#RevitAddin21}"; Flags: ignoreversion; Components: revit21
-Source: "{#Repository}\output\OpenProject.Windows\*"; DestDir: "{#RevitFolder21}\OpenProject.Windows\"; Flags: ignoreversion recursesubdirs; Components: revit21 
+Source: "{#Repository}\output\OpenProject.Windows\*"; DestDir: "{#RevitFolder21}\OpenProject.Windows\"; Flags: ignoreversion recursesubdirs; Components: revit21
+ 
+;REVIT 2022                                                                                                                                    
+Source: "{#Repository}\output\{#RevitAppName}\Release-2022\*"; DestDir: "{#RevitFolder22}"; Flags: ignoreversion recursesubdirs; Components: revit22 
+Source: "{#Repository}\output\{#RevitAppName}\Release-2022\*.addin"; DestDir: "{#RevitAddin22}"; Flags: ignoreversion; Components: revit22
+Source: "{#Repository}\output\OpenProject.Windows\*"; DestDir: "{#RevitFolder22}\OpenProject.Windows\"; Flags: ignoreversion recursesubdirs; Components: revit22 
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
