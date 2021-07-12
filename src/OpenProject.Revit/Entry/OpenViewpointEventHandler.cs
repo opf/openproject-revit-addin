@@ -129,7 +129,6 @@ namespace OpenProject.Revit.Entry
 
       if (camera.Type == CameraType.Orthogonal && camera is OrthogonalCamera orthoCam)
       {
-        openProjectView.ToggleToIsometric();
         AppIdlingCallbackListener.SetPendingZoomChangedCallback(app, openProjectView.Id,
           orthoCam.ViewToWorldScale);
       }
