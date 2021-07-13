@@ -6,7 +6,7 @@ namespace OpenProject.Revit.Data
   public static class RevitUtils
   {
     /// <summary>
-    /// MOVES THE CAMERA ACCORDING TO THE PROJECT BASE LOCATION 
+    /// MOVES THE CAMERA ACCORDING TO THE PROJECT BASE LOCATION
     /// function that changes the coordinates accordingly to the project base location to an absolute location (for BCF export)
     /// if the value negative is set to true, does the opposite (for opening BCF views)
     /// </summary>
@@ -80,7 +80,7 @@ namespace OpenProject.Revit.Data
     /// <returns></returns>
     public static double ToMeters(this double internalUnits)
     {
-#if Version2021
+#if Version2021 || Version2022
       return UnitUtils.ConvertFromInternalUnits(internalUnits, UnitTypeId.Meters);
 #else
       return UnitUtils.ConvertFromInternalUnits(internalUnits, DisplayUnitType.DUT_METERS);
@@ -94,7 +94,7 @@ namespace OpenProject.Revit.Data
     /// <returns></returns>
     public static double ToInternalRevitUnit(this double meters)
     {
-#if Version2021
+#if Version2021 || Version2022
       return UnitUtils.ConvertToInternalUnits(meters, UnitTypeId.Meters);
 #else
       return UnitUtils.ConvertToInternalUnits(meters, DisplayUnitType.DUT_METERS);
@@ -108,7 +108,7 @@ namespace OpenProject.Revit.Data
     /// <returns></returns>
     public static float ToInternalRevitUnit(this float meters)
     {
-#if Version2021
+#if Version2021 || Version2022
       return Convert.ToSingle(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(meters), UnitTypeId.Meters));
 #else
       return Convert.ToSingle(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(meters), DisplayUnitType.DUT_METERS));
