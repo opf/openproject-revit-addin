@@ -11,6 +11,7 @@ namespace OpenProject.Revit.Data
     /// function that changes the coordinates accordingly to the project base location to an absolute location (for BCF export)
     /// if the value negative is set to true, does the opposite (for opening BCF views)
     /// </summary>
+    /// <param name="doc">The Revit Document</param>
     /// <param name="c">center</param>
     /// <param name="view">view direction</param>
     /// <param name="up">up direction</param>
@@ -87,7 +88,7 @@ namespace OpenProject.Revit.Data
     /// <returns></returns>
     public static double ToMeters(this double internalUnits)
     {
-#if Version2021
+#if Version2021 || Version2022
       return UnitUtils.ConvertFromInternalUnits(internalUnits, UnitTypeId.Meters);
 #else
       return UnitUtils.ConvertFromInternalUnits(internalUnits, DisplayUnitType.DUT_METERS);
@@ -101,7 +102,7 @@ namespace OpenProject.Revit.Data
     /// <returns></returns>
     public static double ToInternalRevitUnit(this double meters)
     {
-#if Version2021
+#if Version2021 || Version2022
       return UnitUtils.ConvertToInternalUnits(meters, UnitTypeId.Meters);
 #else
       return UnitUtils.ConvertToInternalUnits(meters, DisplayUnitType.DUT_METERS);

@@ -6,6 +6,6 @@ namespace OpenProject.Shared
     public static class RepositoryInfo
     {
         public static string GitHubOwner => "opf";
-        public static string GitHubRepository => "BCFier";
+        public static string GitHubRepository => "openproject-revit-add-in";
     }
 }
