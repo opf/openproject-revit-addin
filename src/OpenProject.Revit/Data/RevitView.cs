@@ -15,40 +15,31 @@ namespace OpenProject.Revit.Data
     //Generate a VisualizationInfo of the current view
     //</summary>
     //<returns></returns>
-    public static BcfViewpointViewModel GenerateViewpoint(UIDocument uidoc)
+    public static BcfViewpointViewModel GenerateViewpoint(UIDocument uiDoc)
     {
       try
       {
-        var doc = uidoc.Document;
-
+        Document doc = uiDoc.Document;
         var bcfViewpoint = new BcfViewpointViewModel();
 
         //Corners of the active UI view
-        var topLeft = uidoc.GetOpenUIViews()[0].GetZoomCorners()[0];
-        var bottomRight = uidoc.GetOpenUIViews()[0].GetZoomCorners()[1];
+        XYZ bottomLeft = uiDoc.GetOpenUIViews()[0].GetZoomCorners()[0];
+        XYZ topRight = uiDoc.GetOpenUIViews()[0].GetZoomCorners()[1];
 
         //It's a 3d view
-        if (uidoc.ActiveView.ViewType == ViewType.ThreeD)
+        if (uiDoc.ActiveView.ViewType == ViewType.ThreeD)
         {
-          var viewCenter = new XYZ();
-          var view3D = (View3D)uidoc.ActiveView;
-          double zoomValue = 1;
+          var view3D = (View3D) uiDoc.ActiveView;
+
           // it is a orthogonal view
           if (!view3D.IsPerspective)
           {
-            double x = (topLeft.X + bottomRight.X) / 2;
-            double y = (topLeft.Y + bottomRight.Y) / 2;
-            double z = (topLeft.Z + bottomRight.Z) / 2;
             //center of the UI view
-            viewCenter = new XYZ(x, y, z);
+            var viewCenter = new XYZ((topRight.X + bottomLeft.X) / 2,
+              (topRight.Y + bottomLeft.Y) / 2,
+              (topRight.Z + bottomLeft.Z) / 2);
 
-            //vector going from BR to TL
-            XYZ diagVector = topLeft.Subtract(bottomRight);
-            //length of the vector
-            double dist = topLeft.DistanceTo(bottomRight);
-
-            //ViewToWorldScale value
-            zoomValue = (dist * Math.Sin(diagVector.AngleTo(view3D.RightDirection))).ToMeters();
+            var (viewBoxHeight, _) = RevitUtils.ConvertToViewBoxValues(topRight, bottomLeft, view3D.RightDirection);
 
             // **** CUSTOM VALUE FOR TEKLA **** //
             // calculated experimentally, not sure why but it works
@@ -56,79 +47,79 @@ namespace OpenProject.Revit.Data
             //  zoomValue = zoomValue * 2.5;
             // **** CUSTOM VALUE FOR TEKLA **** //
 
-            ViewOrientation3D t = RevitUtils.ConvertBasePoint(doc, viewCenter, uidoc.ActiveView.ViewDirection,
-            uidoc.ActiveView.UpDirection, false);
+            ViewOrientation3D t = RevitUtils.ConvertBasePoint(doc, viewCenter, uiDoc.ActiveView.ViewDirection,
+              uiDoc.ActiveView.UpDirection, false);
 
             XYZ c = t.EyePosition;
             XYZ vi = t.ForwardDirection;
             XYZ up = t.UpDirection;
 
-            bcfViewpoint.Viewpoint = new iabi.BCF.APIObjects.V21.Viewpoint_GET();
-            bcfViewpoint.Viewpoint.Orthogonal_camera = new iabi.BCF.APIObjects.V21.Orthogonal_camera
+            bcfViewpoint.Viewpoint = new iabi.BCF.APIObjects.V21.Viewpoint_GET
             {
-              View_to_world_scale = Convert.ToSingle(zoomValue),
-              Camera_view_point = new iabi.BCF.APIObjects.V21.Point
+              Orthogonal_camera = new iabi.BCF.APIObjects.V21.Orthogonal_camera
               {
-                X = Convert.ToSingle(c.X.ToMeters()),
-                Y = Convert.ToSingle(c.Y.ToMeters()),
-                Z = Convert.ToSingle(c.Z.ToMeters())
-              },
-              Camera_up_vector = new iabi.BCF.APIObjects.V21.Direction
-              {
-                X = Convert.ToSingle(up.X),
-                Y = Convert.ToSingle(up.Y),
-                Z = Convert.ToSingle(up.Z)
-              },
-              Camera_direction = new iabi.BCF.APIObjects.V21.Direction
-              {
-                X = Convert.ToSingle(vi.X * -1),
-                Y = Convert.ToSingle(vi.Y * -1),
-                Z = Convert.ToSingle(vi.Z * -1)
+                View_to_world_scale = Convert.ToSingle(viewBoxHeight.ToMeters()),
+                Camera_view_point =
+                  new iabi.BCF.APIObjects.V21.Point
+                  {
+                    X = Convert.ToSingle(c.X.ToMeters()),
+                    Y = Convert.ToSingle(c.Y.ToMeters()),
+                    Z = Convert.ToSingle(c.Z.ToMeters())
+                  },
+                Camera_up_vector =
+                  new iabi.BCF.APIObjects.V21.Direction
+                  {
+                    X = Convert.ToSingle(up.X), Y = Convert.ToSingle(up.Y), Z = Convert.ToSingle(up.Z)
+                  },
+                Camera_direction = new iabi.BCF.APIObjects.V21.Direction
+                {
+                  X = Convert.ToSingle(vi.X * -1),
+                  Y = Convert.ToSingle(vi.Y * -1),
+                  Z = Convert.ToSingle(vi.Z * -1)
+                }
               }
             };
           }
           // it is a perspective view
           else
           {
-            viewCenter = uidoc.ActiveView.Origin;
-            //revit default value
-            zoomValue = 45;
+            XYZ viewCenter = uiDoc.ActiveView.Origin;
 
-            ViewOrientation3D t = RevitUtils.ConvertBasePoint(doc, viewCenter, uidoc.ActiveView.ViewDirection,
-             uidoc.ActiveView.UpDirection, false);
+            ViewOrientation3D t = RevitUtils.ConvertBasePoint(doc, viewCenter, uiDoc.ActiveView.ViewDirection,
+              uiDoc.ActiveView.UpDirection, false);
 
             XYZ c = t.EyePosition;
             XYZ vi = t.ForwardDirection;
             XYZ up = t.UpDirection;
 
-            bcfViewpoint.Viewpoint = new iabi.BCF.APIObjects.V21.Viewpoint_GET();
-            bcfViewpoint.Viewpoint.Perspective_camera = new iabi.BCF.APIObjects.V21.Perspective_camera
+            bcfViewpoint.Viewpoint = new iabi.BCF.APIObjects.V21.Viewpoint_GET
             {
-              Field_of_view = Convert.ToSingle(zoomValue),
-              Camera_view_point = new iabi.BCF.APIObjects.V21.Point
+              Perspective_camera = new iabi.BCF.APIObjects.V21.Perspective_camera
               {
-                X = Convert.ToSingle(c.X.ToMeters()),
-                Y = Convert.ToSingle(c.Y.ToMeters()),
-                Z = Convert.ToSingle(c.Z.ToMeters())
-              },
-              Camera_up_vector = new iabi.BCF.APIObjects.V21.Direction
-              {
-                X = Convert.ToSingle(up.X),
-                Y = Convert.ToSingle(up.Y),
-                Z = Convert.ToSingle(up.Z)
-              },
-              Camera_direction = new iabi.BCF.APIObjects.V21.Direction
-              {
-                X = Convert.ToSingle(vi.X * -1),
-                Y = Convert.ToSingle(vi.Y * -1),
-                Z = Convert.ToSingle(vi.Z * -1)
+                Field_of_view = 45, //revit default value
+                Camera_view_point =
+                  new iabi.BCF.APIObjects.V21.Point
+                  {
+                    X = Convert.ToSingle(c.X.ToMeters()),
+                    Y = Convert.ToSingle(c.Y.ToMeters()),
+                    Z = Convert.ToSingle(c.Z.ToMeters())
+                  },
+                Camera_up_vector =
+                  new iabi.BCF.APIObjects.V21.Direction
+                  {
+                    X = Convert.ToSingle(up.X), Y = Convert.ToSingle(up.Y), Z = Convert.ToSingle(up.Z)
+                  },
+                Camera_direction = new iabi.BCF.APIObjects.V21.Direction
+                {
+                  X = Convert.ToSingle(vi.X * -1), Y = Convert.ToSingle(vi.Y * -1), Z = Convert.ToSingle(vi.Z * -1)
+                }
               }
             };
           }
         }
 
-        SetViewpointComponents(bcfViewpoint, doc, uidoc);
-        SetViewpointClippingPlanes(bcfViewpoint, uidoc);
+        SetViewpointComponents(bcfViewpoint, doc, uiDoc);
+        SetViewpointClippingPlanes(bcfViewpoint, uiDoc);
 
         return bcfViewpoint;
       }
@@ -136,28 +127,27 @@ namespace OpenProject.Revit.Data
       {
         TaskDialog.Show("Error generating viewpoint", "exception: " + ex1);
       }
+
       return null;
     }
 
-    private static void SetViewpointComponents(BcfViewpointViewModel bcfViewpoint,
-      Document doc,
-      UIDocument uidoc)
+    private static void SetViewpointComponents(BcfViewpointViewModel bcfViewpoint, Document doc, UIDocument uiDoc)
     {
-      string versionName = doc.Application.VersionName;
+      var versionName = doc.Application.VersionName;
 
       var visibleElems = new FilteredElementCollector(doc, doc.ActiveView.Id)
         .WhereElementIsNotElementType()
         .WhereElementIsViewIndependent()
-      .ToElementIds();
+        .ToElementIds();
       var hiddenElems = new FilteredElementCollector(doc)
         .WhereElementIsNotElementType()
         .WhereElementIsViewIndependent()
         .Where(x => x.IsHidden(doc.ActiveView)
-          || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate, x.Id)).Select(x => x.Id)
-          .ToList()
-         ;//would need to check how much this is affecting performance
+                    || !doc.ActiveView.IsElementVisibleInTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate,
+                      x.Id)).Select(x => x.Id)
+        .ToList(); //would need to check how much this is affecting performance
 
-      var selectedElems = uidoc.Selection.GetElementIds();
+      var selectedElems = uiDoc.Selection.GetElementIds();
 
       bcfViewpoint.Components = new iabi.BCF.APIObjects.V21.Components();
       if (hiddenElems.Count > visibleElems.Count)
@@ -165,13 +155,14 @@ namespace OpenProject.Revit.Data
         bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
         {
           Default_visibility = false,
-          Exceptions = visibleElems.Select(visibleComponent => new iabi.BCF.APIObjects.V21.Component
-          {
-            Originating_system = versionName,
-            Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, visibleComponent)),
-            Authoring_tool_id = visibleComponent.IntegerValue.ToString()
-          })
-          .ToList()
+          Exceptions = visibleElems
+            .Select(visibleComponent => new iabi.BCF.APIObjects.V21.Component
+            {
+              Originating_system = versionName,
+              Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, visibleComponent)),
+              Authoring_tool_id = visibleComponent.IntegerValue.ToString()
+            })
+            .ToList()
         };
       }
       else
@@ -179,13 +170,14 @@ namespace OpenProject.Revit.Data
         bcfViewpoint.Components.Visibility = new iabi.BCF.APIObjects.V21.Visibility
         {
           Default_visibility = true,
-          Exceptions = hiddenElems.Select(hiddenComponent => new iabi.BCF.APIObjects.V21.Component
-          {
-            Originating_system = versionName,
-            Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, hiddenComponent)),
-            Authoring_tool_id = hiddenComponent.IntegerValue.ToString()
-          })
-          .ToList()
+          Exceptions = hiddenElems
+            .Select(hiddenComponent => new iabi.BCF.APIObjects.V21.Component
+            {
+              Originating_system = versionName,
+              Ifc_guid = IfcGuid.ToIfcGuid(ExportUtils.GetExportId(doc, hiddenComponent)),
+              Authoring_tool_id = hiddenComponent.IntegerValue.ToString()
+            })
+            .ToList()
         };
       }
 
@@ -204,16 +196,13 @@ namespace OpenProject.Revit.Data
       }
     }
 
-    private static void SetViewpointClippingPlanes(BcfViewpointViewModel bcfViewpoint,
-      UIDocument uidoc)
+    private static void SetViewpointClippingPlanes(BcfViewpointViewModel bcfViewpoint, UIDocument uiDoc)
     {
       // There are actually no clipping planes in a 3d view in revit, rather it's a
       // section box, meaning a set of 6 clipping planes that wrap the visible part
       // of a model inside a cuboid shape.
-      if (!(uidoc.ActiveView is View3D view3d) || !view3d.IsSectionBoxActive)
-      {
+      if (uiDoc.ActiveView is not View3D { IsSectionBoxActive: true } view3d)
         return;
-      }
 
       bcfViewpoint.Viewpoint.Clipping_planes = new List<iabi.BCF.APIObjects.V21.Clipping_plane>();
       var revitSectionBox = view3d.GetSectionBox();
@@ -221,8 +210,8 @@ namespace OpenProject.Revit.Data
       // The Min and Max represent two corners of the section box on opposite
       // sides, so they're describing a cuboid 3D geometry, which we can now
       // use to derive the six actual planes from
-      var transformedMin = revitSectionBox.Transform.OfPoint(revitSectionBox.Min);
-      var transformedMax = revitSectionBox.Transform.OfPoint(revitSectionBox.Max);
+      XYZ transformedMin = revitSectionBox.Transform.OfPoint(revitSectionBox.Min);
+      XYZ transformedMax = revitSectionBox.Transform.OfPoint(revitSectionBox.Max);
 
       // A clipping plane is defined as a point and a direction, so we now
       // can use each point (Min and Max) three times, each with one direction in
@@ -230,34 +219,39 @@ namespace OpenProject.Revit.Data
       // The vectors for the Min point should point away from the center (negative)
       // and the vectors for the Max point should be positive
       bcfViewpoint.Viewpoint.Clipping_planes = new[]
-      {
-        new {
-          Location = transformedMin,
-          Direction = revitSectionBox.Transform.OfVector(new XYZ(-1,0,0))
-        },
-        new {
-          Location = transformedMin,
-          Direction = revitSectionBox.Transform.OfVector(new XYZ(0,-1,0))
-        },
-        new {
-          Location = transformedMin,
-          Direction = revitSectionBox.Transform.OfVector(new XYZ(0,0,-1))
-        },
-        new {
-          Location = transformedMax,
-          Direction = revitSectionBox.Transform.OfVector(new XYZ(1,0,0))
-        },
-        new {
-          Location = transformedMax,
-          Direction = revitSectionBox.Transform.OfVector(new XYZ(0,1,0))
-        },
-        new {
-          Location = transformedMax,
-          Direction = revitSectionBox.Transform.OfVector(new XYZ(0,0,1))
+        {
+          new
+          {
+            Location = transformedMin,
+            Direction = revitSectionBox.Transform.OfVector(new XYZ(-1, 0, 0))
+          },
+          new
+          {
+            Location = transformedMin,
+            Direction = revitSectionBox.Transform.OfVector(new XYZ(0, -1, 0))
+          },
+          new
+          {
+            Location = transformedMin,
+            Direction = revitSectionBox.Transform.OfVector(new XYZ(0, 0, -1))
+          },
+          new
+          {
+            Location = transformedMax,
+            Direction = revitSectionBox.Transform.OfVector(new XYZ(1, 0, 0))
+          },
+          new
+          {
+            Location = transformedMax,
+            Direction = revitSectionBox.Transform.OfVector(new XYZ(0, 1, 0))
+          },
+          new
+          {
+            Location = transformedMax,
+            Direction = revitSectionBox.Transform.OfVector(new XYZ(0, 0, 1))
+          }
         }
-      }
-      .Select(cp =>
-        new iabi.BCF.APIObjects.V21.Clipping_plane
+        .Select(cp => new iabi.BCF.APIObjects.V21.Clipping_plane
         {
           Location = new iabi.BCF.APIObjects.V21.Location
           {
@@ -271,9 +265,8 @@ namespace OpenProject.Revit.Data
             Y = Convert.ToSingle(cp.Direction.Y),
             Z = Convert.ToSingle(cp.Direction.Z)
           }
-        
-      })
-      .ToList();
+        })
+        .ToList();
     }
   }
 }

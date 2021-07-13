@@ -3,7 +3,7 @@ using System;
 
 namespace OpenProject.Shared.ViewModels.Bcf
 {
-  public class BcfCommentviewModel : BindableBase
+  public class BcfCommentViewModel : BindableBase
   {
     private string _author;
     private string _modifiedAuthor;

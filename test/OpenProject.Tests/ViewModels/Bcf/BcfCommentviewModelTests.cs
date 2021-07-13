@@ -9,14 +9,14 @@ namespace OpenProject.Tests.ViewModels.Bcf
     [Fact]
     public void InstantiatesWithRanomdGuidForId()
     {
-      var actual = new BcfCommentviewModel().Id;
+      var actual = new BcfCommentViewModel().Id;
       Assert.NotEqual(Guid.Empty, actual);
     }
 
     [Fact]
     public void CanSetGuidAsId()
     {
-      var viewModel = new BcfCommentviewModel();
+      var viewModel = new BcfCommentViewModel();
       var guid = Guid.NewGuid();
       Assert.NotEqual(guid, viewModel.Id);
       viewModel.Id = guid;
@@ -26,14 +26,14 @@ namespace OpenProject.Tests.ViewModels.Bcf
     [Fact]
     public void ViewpointIdIsNullAfterInstantiation()
     {
-      var viewModel = new BcfCommentviewModel();
+      var viewModel = new BcfCommentViewModel();
       Assert.Null(viewModel.ViewpointId);
     }
 
     [Fact]
     public void InstantiatesWithCreationDateSetToUTcNow()
     {
-      var viewModel = new BcfCommentviewModel();
+      var viewModel = new BcfCommentViewModel();
       Assert.True((DateTime.UtcNow - viewModel.CreationDate).TotalMinutes <= 5);
     }
   }

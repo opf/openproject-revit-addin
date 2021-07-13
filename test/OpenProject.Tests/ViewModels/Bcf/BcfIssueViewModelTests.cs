@@ -90,7 +90,7 @@ namespace OpenProject.Tests.ViewModels.Bcf
 
       Assert.False(issue.IsModified);
       Assert.Null(issue.Markup.BcfTopic.ModifiedDate);
-      issue.Markup.Comments.Add(new BcfCommentviewModel
+      issue.Markup.Comments.Add(new BcfCommentViewModel
       {
         Text = "New Comment"
       });
@@ -107,7 +107,7 @@ namespace OpenProject.Tests.ViewModels.Bcf
       {
         BcfTopic = new BcfTopicViewModel()
       };
-      issue.Markup.Comments.Add(new BcfCommentviewModel
+      issue.Markup.Comments.Add(new BcfCommentViewModel
       {
         Text = "Hello World!"
       });
@@ -145,7 +145,7 @@ namespace OpenProject.Tests.ViewModels.Bcf
       Assert.True(issue.IsModified);
       Assert.NotNull(issue.Markup.BcfTopic.ModifiedDate);
       var expectedModifiedDate = issue.Markup.BcfTopic.ModifiedDate;
-      markup.Comments.Add(new BcfCommentviewModel());
+      markup.Comments.Add(new BcfCommentViewModel());
       Assert.Equal(expectedModifiedDate, issue.Markup.BcfTopic.ModifiedDate);
     }
   }
